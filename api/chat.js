@@ -1,31 +1,25 @@
 export default async function handler(req, res) {
-  // CORS para Power BI
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-api-key");
-  res.setHeader("Access-Control-Max-Age", "86400");
 
-  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const body = req.body || {};
-
-    // Aceita question direto ou pega a última mensagem do chat
-    const question =
-      body.question ||
-      body.messages?.filter((m) => m.role === "user")?.at(-1)?.content;
+    const { question } = req.body || {};
 
     if (!question) {
       return res.status(400).json({
-        error: "Envie 'question' ou 'messages' com a pergunta do usuário."
+        error: "A pergunta não foi enviada. Envie o campo question."
       });
     }
 
-    // 1. Claude interpreta a pergunta em JSON
     const intentResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -35,79 +29,66 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 600,
+        max_tokens: 500,
         system: `
-Você é um analista especialista em Power BI.
+Você interpreta perguntas sobre um modelo Power BI.
+Responda SOMENTE um JSON válido.
 
-Sua função é interpretar a pergunta do usuário e retornar APENAS um JSON válido.
+Medidas permitidas:
+[Receita]
+[Volume]
+[Margem]
+[Custo Médio]
+[Preço Sell IN]
+[Price Index]
+[Score Final]
+[Score Receita]
+[Score Volume]
+[Score Margem]
+[Score Custo Médio]
+[Score Price Index]
+[% Chaves Verdes]
+[% Chaves Amarelas]
+[% Chaves Vermelhas]
+[Qtd Chaves Verdes]
+[Qtd Chaves Amarelas]
+[Qtd Chaves Vermelhas]
+[Faturamento Pocket]
 
-Modelo semântico disponível:
+Dimensões permitidas:
+d_uf[UF]
+d_filial[Nome]
+d_material[Categoria]
+d_material[Família]
+d_material[Produto]
+d_calendario[Ano]
+d_calendario[Ano-Mês]
+f_faturamento[Agrupamento Clientes]
+f_faturamento[Agrupamento Nível 1]
+f_faturamento[Agrupamento Nível 2]
+f_faturamento[Agrupamento Nível 3]
 
-Tabelas/dimensões:
-- d_uf[UF]
-- d_filial[Nome]
-- d_material[Categoria]
-- d_material[Família]
-- d_material[Produto]
-- d_calendario[Ano]
-- d_calendario[Ano-Mês]
-- d_calendario[Data]
-- f_faturamento[Agrupamento Clientes]
-- f_faturamento[Agrupamento Nível 1]
-- f_faturamento[Agrupamento Nível 2]
-- f_faturamento[Agrupamento Nível 3]
+Regras:
+- faturamento, vendas ou receita = [Receita]
+- volume = [Volume]
+- margem = [Margem]
+- custo = [Custo Médio]
+- preço = [Preço Sell IN]
+- score/performance = [Score Final]
+- estado/UF = d_uf[UF]
+- categoria = d_material[Categoria]
+- família = d_material[Família]
+- produto = d_material[Produto]
+- mês = d_calendario[Ano-Mês]
+- ano = d_calendario[Ano]
 
-Medidas:
-- [Receita]
-- [Volume]
-- [Margem]
-- [Custo Médio]
-- [Preço Sell IN]
-- [Price Index]
-- [Score Final]
-- [Score Receita]
-- [Score Volume]
-- [Score Margem]
-- [Score Custo Médio]
-- [Score Price Index]
-- [% Chaves Verdes]
-- [% Chaves Amarelas]
-- [% Chaves Vermelhas]
-- [Qtd Chaves Verdes]
-- [Qtd Chaves Amarelas]
-- [Qtd Chaves Vermelhas]
-- [Faturamento Pocket]
-
-Regras de interpretação:
-- "faturamento", "vendas", "receita" => [Receita]
-- "volume", "quantidade" => [Volume]
-- "margem" => [Margem]
-- "custo" => [Custo Médio]
-- "preço" => [Preço Sell IN]
-- "price index", "índice de preço" => [Price Index]
-- "score", "performance", "desempenho" => [Score Final]
-- "UF", "estado" => d_uf[UF]
-- "filial" => d_filial[Nome]
-- "categoria" => d_material[Categoria]
-- "família" => d_material[Família]
-- "produto" => d_material[Produto]
-- "mês", "mensal", "ano mês" => d_calendario[Ano-Mês]
-- "ano" => d_calendario[Ano]
-
-Formato obrigatório:
+Formato:
 {
   "medida": "[Receita]",
   "dimensao": "d_uf[UF]",
   "ordenacao": "DESC",
-  "limite": 100,
-  "tipo": "ranking"
+  "limite": 100
 }
-
-Se não identificar dimensão, use null.
-Se não identificar medida, use "[Receita]".
-Não explique nada.
-Não use markdown.
-Retorne somente JSON.
         `,
         messages: [
           {
@@ -123,7 +104,7 @@ Retorne somente JSON.
 
     if (!intentText) {
       return res.status(500).json({
-        error: "Erro ao interpretar pergunta.",
+        error: "Erro ao interpretar pergunta com Claude.",
         details: intentData
       });
     }
@@ -132,14 +113,13 @@ Retorne somente JSON.
 
     try {
       intent = JSON.parse(intentText);
-    } catch {
+    } catch (e) {
       return res.status(500).json({
         error: "Claude não retornou JSON válido.",
-        raw: intentText
+        details: intentText
       });
     }
 
-    // 2. Validação para evitar DAX inventado
     const medidasPermitidas = [
       "[Receita]",
       "[Volume]",
@@ -170,7 +150,6 @@ Retorne somente JSON.
       "d_material[Produto]",
       "d_calendario[Ano]",
       "d_calendario[Ano-Mês]",
-      "d_calendario[Data]",
       "f_faturamento[Agrupamento Clientes]",
       "f_faturamento[Agrupamento Nível 1]",
       "f_faturamento[Agrupamento Nível 2]",
@@ -191,11 +170,8 @@ Retorne somente JSON.
 
     const ordenacao = intent.ordenacao === "ASC" ? "ASC" : "DESC";
 
-    // 3. Monta DAX com segurança
-    let daxQuery;
-
-    if (dimensao) {
-      daxQuery = `
+    const daxQuery = dimensao
+      ? `
 EVALUATE
 TOPN(
     ${limite},
@@ -206,17 +182,14 @@ TOPN(
     [Valor],
     ${ordenacao}
 )
-`;
-    } else {
-      daxQuery = `
+`
+      : `
 EVALUATE
 ROW(
     "Valor", ${medida}
 )
 `;
-    }
 
-    // 4. Token Power BI
     const tokenResponse = await fetch(
       `https://login.microsoftonline.com/${process.env.TENANT_ID}/oauth2/v2.0/token`,
       {
@@ -242,7 +215,6 @@ ROW(
       });
     }
 
-    // 5. Executa DAX no modelo semântico
     const pbiResponse = await fetch(
       `https://api.powerbi.com/v1.0/myorg/groups/${process.env.WORKSPACE_ID}/datasets/${process.env.DATASET_ID}/executeQueries`,
       {
@@ -274,7 +246,6 @@ ROW(
       });
     }
 
-    // 6. Claude responde baseado nos dados retornados
     const finalResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -284,33 +255,25 @@ ROW(
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        max_tokens: 900,
         system: `
 Você é uma assistente executiva de dados.
-
-Responda em português, de forma clara e objetiva.
-
-Regras:
-- Use SOMENTE os dados retornados pelo Power BI.
-- Não invente números.
-- Se não houver dados suficientes, diga claramente.
-- Responda como análise de dashboard.
-- Destaque principais valores, ranking ou insight.
+Responda em português.
+Use somente os dados retornados pelo Power BI.
+Não invente valores.
+Se houver erro ou poucos dados, explique claramente.
         `,
         messages: [
           {
             role: "user",
             content: `
-Pergunta original:
+Pergunta:
 ${question}
 
-Interpretação:
-${JSON.stringify(intent)}
-
-DAX executada:
+DAX:
 ${daxQuery}
 
-Resultado do Power BI:
+Resultado Power BI:
 ${JSON.stringify(pbiData)}
             `
           }
@@ -320,10 +283,8 @@ ${JSON.stringify(pbiData)}
 
     const finalData = await finalResponse.json();
 
-    const answer = finalData?.content?.[0]?.text || "Não consegui gerar a resposta.";
-
     return res.status(200).json({
-      answer,
+      answer: finalData?.content?.[0]?.text || "Não consegui gerar resposta.",
       intent,
       daxQuery,
       powerBiResult: pbiData
@@ -331,7 +292,8 @@ ${JSON.stringify(pbiData)}
 
   } catch (error) {
     return res.status(500).json({
-      error: error.message
+      error: error.message || "Erro interno",
+      stack: error.stack || null
     });
   }
 }
