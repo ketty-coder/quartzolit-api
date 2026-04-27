@@ -6,20 +6,74 @@
 
   <style>
     body {
-      font-family: Arial;
+      margin: 0;
+      font-family: Arial, sans-serif;
       background: #0f172a;
       color: white;
+    }
+
+    .header {
+      background: black;
+      color: #FFD100;
+      padding: 12px 20px;
+      font-weight: bold;
+      border-bottom: 2px solid #FFD100;
+    }
+
+    .container {
       padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .box {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
+    .quick-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .quick-buttons button {
+      background: #334155;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 20px;
+      color: white;
+      cursor: pointer;
     }
 
     .chat {
-      max-width: 800px;
-      margin: auto;
+      margin-top: 20px;
+    }
+
+    .msg {
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      max-width: 80%;
+    }
+
+    .user {
+      background: #FFD100;
+      color: black;
+      margin-left: auto;
+    }
+
+    .bot {
+      background: #334155;
     }
 
     .input-box {
       display: flex;
       gap: 10px;
+      margin-top: 15px;
     }
 
     input {
@@ -29,78 +83,104 @@
       border: none;
     }
 
-    button {
-      padding: 12px 20px;
+    button.send {
       background: #FFD100;
       border: none;
+      padding: 12px 20px;
       border-radius: 8px;
       cursor: pointer;
     }
 
-    .msg {
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 8px;
-    }
-
-    .user {
-      background: #1e293b;
-    }
-
-    .bot {
-      background: #334155;
+    pre {
+      white-space: pre-wrap;
+      font-size: 12px;
     }
   </style>
 </head>
 
 <body>
-  <div class="chat">
-    <h2>🤖 Quartzolit AI</h2>
+
+  <div class="header">● QUARTZOLIT AI</div>
+
+  <div class="container">
+
+    <div class="box">
+      Olá! Sou a IA da Quartzolit com acesso ao modelo semântico.<br><br>
+      Pergunte sobre <b>scores, alertas, variações e ponto de ataque</b>!
+
+      <div class="quick-buttons">
+        <button onclick="enviarPergunta('Famílias críticas?')">Famílias críticas?</button>
+        <button onclick="enviarPergunta('Indicadores vs ano anterior?')">Indicadores vs ano anterior?</button>
+        <button onclick="enviarPergunta('Ação recomendada?')">Ação recomendada</button>
+        <button onclick="enviarPergunta('Resumo do cenário')">Resumo do cenário</button>
+      </div>
+    </div>
+
+    <div id="chat" class="chat"></div>
 
     <div class="input-box">
       <input id="pergunta" placeholder="Digite sua pergunta..." />
-      <button onclick="enviar()">Enviar</button>
+      <button class="send" onclick="enviar()">Enviar</button>
     </div>
 
-    <div id="chat"></div>
   </div>
 
-  <script>
-    async function enviar() {
-      const pergunta = document.getElementById("pergunta").value;
+<script>
+async function enviar() {
+  const input = document.getElementById("pergunta");
+  const pergunta = input.value;
 
-      if (!pergunta) return;
+  if (!pergunta) return;
 
-      const chat = document.getElementById("chat");
+  enviarPergunta(pergunta);
+  input.value = "";
+}
 
-      chat.innerHTML += `<div class="msg user"><b>Você:</b> ${pergunta}</div>`;
+async function enviarPergunta(pergunta) {
+  const chat = document.getElementById("chat");
 
-      const loading = document.createElement("div");
-      loading.className = "msg bot";
-      loading.innerHTML = "Pensando...";
-      chat.appendChild(loading);
+  // mensagem do usuário
+  chat.innerHTML += `<div class="msg user">${pergunta}</div>`;
 
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            question: pergunta
-          })
-        });
+  // loading
+  const loading = document.createElement("div");
+  loading.className = "msg bot";
+  loading.innerHTML = "Consultando modelo semântico...";
+  chat.appendChild(loading);
 
-        const data = await response.json();
+  try {
+    const response = await fetch("https://quartzolit-api-6a8h.vercel.app/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        question: pergunta
+      })
+    });
 
-        loading.innerHTML = `<b>IA:</b> ${data.answer}`;
+    const data = await response.json();
 
-      } catch (error) {
-        loading.innerHTML = "Erro ao consultar a IA";
-      }
+    console.log("RESPOSTA API:", data);
 
-      document.getElementById("pergunta").value = "";
+    if (!response.ok) {
+      loading.innerHTML = `
+        <b>Erro:</b> ${data.error || "Erro desconhecido"}<br>
+        <pre>${JSON.stringify(data.details || data, null, 2)}</pre>
+      `;
+      return;
     }
-  </script>
+
+    loading.innerHTML = `<b>IA:</b><br>${data.answer || "Sem resposta"}`;
+
+  } catch (error) {
+    console.error(error);
+    loading.innerHTML = `Erro de conexão: ${error.message}`;
+  }
+
+  chat.scrollTop = chat.scrollHeight;
+}
+</script>
+
 </body>
 </html>
