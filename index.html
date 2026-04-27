@@ -1,154 +1,27 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <title>Quartzolit AI</title>
-
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-    }
-
-    .header {
-      background: black;
-      color: #FFD100;
-      padding: 12px 20px;
-      font-weight: bold;
-      border-bottom: 2px solid #FFD100;
-    }
-
-    .container {
-      padding: 20px;
-      max-width: 900px;
-      margin: auto;
-    }
-
-    .box {
-      background: #1e293b;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 15px;
-    }
-
-    .quick-buttons {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-
-    .quick-buttons button {
-      background: #334155;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 20px;
-      color: white;
-      cursor: pointer;
-    }
-
-    .chat {
-      margin-top: 20px;
-    }
-
-    .msg {
-      padding: 10px;
-      border-radius: 10px;
-      margin-bottom: 10px;
-      max-width: 80%;
-    }
-
-    .user {
-      background: #FFD100;
-      color: black;
-      margin-left: auto;
-    }
-
-    .bot {
-      background: #334155;
-    }
-
-    .input-box {
-      display: flex;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    input {
-      flex: 1;
-      padding: 12px;
-      border-radius: 8px;
-      border: none;
-    }
-
-    button.send {
-      background: #FFD100;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    pre {
-      white-space: pre-wrap;
-      font-size: 12px;
-    }
-  </style>
-</head>
-
-<body>
-
-  <div class="header">● QUARTZOLIT AI</div>
-
-  <div class="container">
-
-    <div class="box">
-      Olá! Sou a IA da Quartzolit com acesso ao modelo semântico.<br><br>
-      Pergunte sobre <b>scores, alertas, variações e ponto de ataque</b>!
-
-      <div class="quick-buttons">
-        <button onclick="enviarPergunta('Famílias críticas?')">Famílias críticas?</button>
-        <button onclick="enviarPergunta('Indicadores vs ano anterior?')">Indicadores vs ano anterior?</button>
-        <button onclick="enviarPergunta('Ação recomendada?')">Ação recomendada</button>
-        <button onclick="enviarPergunta('Resumo do cenário')">Resumo do cenário</button>
-      </div>
-    </div>
-
-    <div id="chat" class="chat"></div>
-
-    <div class="input-box">
-      <input id="pergunta" placeholder="Digite sua pergunta..." />
-      <button class="send" onclick="enviar()">Enviar</button>
-    </div>
-
-  </div>
-
 <script>
-async function enviar() {
+window.enviar = async function () {
   const input = document.getElementById("pergunta");
   const pergunta = input.value;
 
   if (!pergunta) return;
 
-  enviarPergunta(pergunta);
+  await window.enviarPergunta(pergunta);
   input.value = "";
-}
+};
 
-async function enviarPergunta(pergunta) {
+window.enviarPergunta = async function (pergunta) {
   const chat = document.getElementById("chat");
 
-  // mensagem do usuário
   chat.innerHTML += `<div class="msg user">${pergunta}</div>`;
 
-  // loading
   const loading = document.createElement("div");
   loading.className = "msg bot";
   loading.innerHTML = "Consultando modelo semântico...";
   chat.appendChild(loading);
 
   try {
+    console.log("Enviando pergunta...");
+
     const response = await fetch("https://quartzolit-api-6a8h.vercel.app/api/chat", {
       method: "POST",
       headers: {
@@ -159,6 +32,8 @@ async function enviarPergunta(pergunta) {
       })
     });
 
+    console.log("Status:", response.status);
+
     const data = await response.json();
 
     console.log("RESPOSTA API:", data);
@@ -166,7 +41,7 @@ async function enviarPergunta(pergunta) {
     if (!response.ok) {
       loading.innerHTML = `
         <b>Erro:</b> ${data.error || "Erro desconhecido"}<br>
-        <pre>${JSON.stringify(data.details || data, null, 2)}</pre>
+        <pre>${JSON.stringify(data, null, 2)}</pre>
       `;
       return;
     }
@@ -174,13 +49,10 @@ async function enviarPergunta(pergunta) {
     loading.innerHTML = `<b>IA:</b><br>${data.answer || "Sem resposta"}`;
 
   } catch (error) {
-    console.error(error);
+    console.error("ERRO FETCH:", error);
     loading.innerHTML = `Erro de conexão: ${error.message}`;
   }
 
   chat.scrollTop = chat.scrollHeight;
-}
+};
 </script>
-
-</body>
-</html>
