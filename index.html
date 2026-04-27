@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quartzolit AI</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      padding: 20px;
+    }
+
+    .chat {
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .input-box {
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    button {
+      padding: 12px 20px;
+      background: #FFD100;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .msg {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .user {
+      background: #1e293b;
+    }
+
+    .bot {
+      background: #334155;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="chat">
+    <h2>🤖 Quartzolit AI</h2>
+
+    <div class="input-box">
+      <input id="pergunta" placeholder="Digite sua pergunta..." />
+      <button onclick="enviar()">Enviar</button>
+    </div>
+
+    <div id="chat"></div>
+  </div>
+
+  <script>
+    async function enviar() {
+      const pergunta = document.getElementById("pergunta").value;
+
+      if (!pergunta) return;
+
+      const chat = document.getElementById("chat");
+
+      chat.innerHTML += `<div class="msg user"><b>Você:</b> ${pergunta}</div>`;
+
+      const loading = document.createElement("div");
+      loading.className = "msg bot";
+      loading.innerHTML = "Pensando...";
+      chat.appendChild(loading);
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            question: pergunta
+          })
+        });
+
+        const data = await response.json();
+
+        loading.innerHTML = `<b>IA:</b> ${data.answer}`;
+
+      } catch (error) {
+        loading.innerHTML = "Erro ao consultar a IA";
+      }
+
+      document.getElementById("pergunta").value = "";
+    }
+  </script>
+</body>
+</html>
