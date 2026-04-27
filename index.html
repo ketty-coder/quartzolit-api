@@ -1,4 +1,6 @@
 <script>
+console.log("INDEX ATUALIZADO - VERSAO FINAL");
+
 window.enviar = async function () {
   const input = document.getElementById("pergunta");
   const pergunta = input.value;
@@ -20,22 +22,13 @@ window.enviarPergunta = async function (pergunta) {
   chat.appendChild(loading);
 
   try {
-    console.log("Enviando pergunta...");
-
     const response = await fetch("https://quartzolit-api-6a8h.vercel.app/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        question: pergunta
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: pergunta })
     });
 
-    console.log("Status:", response.status);
-
     const data = await response.json();
-
     console.log("RESPOSTA API:", data);
 
     if (!response.ok) {
@@ -49,10 +42,7 @@ window.enviarPergunta = async function (pergunta) {
     loading.innerHTML = `<b>IA:</b><br>${data.answer || "Sem resposta"}`;
 
   } catch (error) {
-    console.error("ERRO FETCH:", error);
     loading.innerHTML = `Erro de conexão: ${error.message}`;
   }
-
-  chat.scrollTop = chat.scrollHeight;
 };
 </script>
