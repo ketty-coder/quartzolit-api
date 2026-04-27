@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quartzolit AI</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f5f5f5}
+.wrap{display:flex;flex-direction:column;width:100%;height:100vh}
+.hdr{background:#000;border-bottom:3px solid #FFD100;padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.dot{width:7px;height:7px;background:#FFD100;border-radius:50%;animation:p 2s infinite}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr h1{font-size:12px;font-weight:700;color:#FFD100;letter-spacing:1px}
+.hdr em{font-size:10px;color:#777;margin-left:auto;font-style:normal}
+.msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.bbl{max-width:86%;padding:9px 13px;border-radius:12px;font-size:12px;line-height:1.55;word-break:break-word}
+.bbl.u{background:#000;color:#FFD100;align-self:flex-end;border-radius:12px 12px 3px 12px;font-weight:600}
+.bbl.a{background:#fff;color:#222;align-self:flex-start;border:1px solid #ddd;border-radius:12px 12px 12px 3px}
+.bbl.a b{color:#000}
+.bbl.t{background:#fff;border:1px solid #ddd;align-self:flex-start;padding:8px 13px}
+.dots span{display:inline-block;width:6px;height:6px;background:#FFD100;border-radius:50%;animation:b 1.2s infinite;margin:0 2px}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes b{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+.suggs{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.sg{background:#f0f0f0;border:1.5px solid #ddd;color:#555;font-size:11px;padding:5px 11px;border-radius:14px;cursor:pointer;font-family:inherit}
+.sg:hover{border-color:#FFD100;color:#000}
+.foot{padding:8px 10px;background:#fff;border-top:2px solid #FFD100;display:flex;gap:7px;align-items:center;flex-shrink:0}
+#editor{flex:1;background:#f5f5f5;border:1.5px solid #ccc;color:#111;padding:9px 13px;border-radius:9px;font-size:13px;outline:none;font-family:inherit;min-height:38px;max-height:80px;overflow-y:auto;cursor:text}
+#editor:focus{border-color:#FFD100;background:#fff}
+#editor:empty:before{content:'Digite sua pergunta aqui...';color:#aaa;pointer-events:none}
+#btn{background:#FFD100;color:#000;border:none;padding:9px 18px;border-radius:9px;font-size:14px;font-weight:900;cursor:pointer;flex-shrink:0}
+#btn:disabled{opacity:.35}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr"><div class="dot"></div><h1>QUARTZOLIT AI</h1><em>Assistente de Dados</em></div>
+  <div class="msgs" id="msgs">
+    <div class="bbl a">
+      Ol&#225;! Sou a IA da Quartzolit com acesso ao modelo sem&#226;ntico.<br><br>
+      Pergunte sobre <b>scores, alertas, varia&#231;&#245;es e ponto de ataque</b>!
+      <div class="suggs">
+        <span class="sg" id="s1">Fam&#237;lias cr&#237;ticas?</span>
+        <span class="sg" id="s2">Indicadores vs ano anterior?</span>
+        <span class="sg" id="s3">A&#231;&#227;o recomendada?</span>
+        <span class="sg" id="s4">Resumo do cen&#225;rio</span>
+      </div>
+    </div>
+  </div>
+  <div class="foot">
+    <div id="editor" contenteditable="true"></div>
+    <button id="btn">&#9658;</button>
+  </div>
+</div>
+<script>
+var SYS='Voce e assistente de negocios da Quartzolit (Saint-Gobain Brasil). Responda em portugues. Use somente dados fornecidos. Se faltar dados diga claramente. Seja objetivo. Use **negrito** para numeros. Score 0-100: verde=saudavel, vermelho=critico. T1=Preco T2=Volume T3=Rentabilidade.';
+var H=[];
+var M=document.getElementById('msgs');
+var ed=document.getElementById('editor');
+var btn=document.getElementById('btn');
+function sb(){M.scrollTop=M.scrollHeight}
+function am(t,c){var d=document.createElement('div');d.className='bbl '+c;d.innerHTML=t.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');M.appendChild(d);sb()}
+function st(){var d=document.createElement('div');d.className='bbl t';d.id='tp';d.innerHTML="<div class='dots'><span></span><span></span><span></span></div>";M.appendChild(d);sb()}
+function rt(){var t=document.getElementById('tp');if(t)t.remove()}
+function go(){
+  var t=(ed.textContent||ed.innerText||'').trim();
+  if(!t)return;
+  ed.textContent='';btn.disabled=true;
+  am(t,'u');H.push({role:'user',content:t});st();
+  fetch('/api/chat',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({system:SYS,messages:H})
+  }).then(function(r){return r.json()}).then(function(d){
+    rt();
+    if(d.content&&d.content[0]){var rep=d.content[0].text;H.push({role:'assistant',content:rep});am(rep,'a')}
+    else if(d.error){am('Erro: '+d.error.message,'a')}
+    else{am('Sem resposta.','a')}
+    btn.disabled=false;ed.focus();
+  }).catch(function(e){rt();am('Erro: '+e.message,'a');btn.disabled=false});
+}
+btn.addEventListener('click',function(){go()});
+ed.addEventListener('keydown',function(e){if(e.keyCode===13&&!e.shiftKey){e.preventDefault();go()}});
+document.getElementById('s1').addEventListener('click',function(){ed.textContent=this.textContent;go()});
+document.getElementById('s2').addEventListener('click',function(){ed.textContent=this.textContent;go()});
+document.getElementById('s3').addEventListener('click',function(){ed.textContent=this.textContent;go()});
+document.getElementById('s4').addEventListener('click',function(){ed.textContent=this.textContent;go()});
+function fix(){var w=document.querySelector('.wrap');if(w)w.style.height=window.innerHeight+'px'}
+window.addEventListener('resize',fix);fix();
+</script>
+</body>
+</html>
