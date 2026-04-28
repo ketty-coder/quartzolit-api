@@ -12,75 +12,36 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'messages array is required' });
     }
 
-    // Busca token Azure AD para Power BI REST API
+    // Variaveis de ambiente (nomes conforme configurado no Vercel)
+    const tenantId    = process.env.TENANT_ID;
+    const clientId    = process.env.CLIENT_ID;
+    const clientSecret = process.env.CLIENT_SECRET;
+    const workspaceId = process.env.WORKSPACE_ID;
+    const datasetId   = process.env.DATASET_ID;
+
+    // 1. Busca token Azure AD
     const tokenRes = await fetch(
-      `https://login.microsoftonline.com/${process.env.PBI_TENANT_ID}/oauth2/v2.0/token`,
+      `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           grant_type: 'client_credentials',
-          client_id: process.env.PBI_CLIENT_ID,
-          client_secret: process.env.PBI_CLIENT_SECRET,
+          client_id: clientId,
+          client_secret: clientSecret,
           scope: 'https://analysis.windows.net/powerbi/api/.default'
         })
       }
     );
     const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) {
+      throw new Error('Falha ao obter token Azure: ' + JSON.stringify(tokenData));
+    }
     const accessToken = tokenData.access_token;
 
-    // Executa queries DAX no modelo semantico
-    const daxQueries = [
-      // KPIs principais
-      `EVALUATE ROW(
-        "periodo_atual", CALCULATE(MAX(d_periodo_atual[Ano-Mes Label])),
-        "periodo_ref", CALCULATE(MIN(d_periodo_ref[Ano-Mes Label])),
-        "var_receita", CALCULATE([Variacao % Receita]),
-        "var_volume", CALCULATE([Variacao % Volume]),
-        "var_margem", CALCULATE([Variacao pp Margem]),
-        "var_preco", CALCULATE([Variacao % Preco Sell IN]),
-        "qtd_verdes", [Qtd Chaves Verdes],
-        "qtd_amarelas", [Qtd Chaves Amarelas],
-        "qtd_vermelhas", [Qtd Chaves Vermelhas]
-      )`
-    ];
-
-    // Executa DAX via Power BI REST API
-    const daxRes = await fetch(
-      `https://api.powerbi.com/v1.0/myorg/groups/${process.env.PBI_WORKSPACE_ID}/datasets/${process.env.PBI_DATASET_ID}/executeQueries`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          queries: [{ query: daxQueries[0] }],
-          serializerSettings: { includeNulls: true }
-        })
-      }
-    );
-    const daxData = await daxRes.json();
-
-    // Extrai resultados
-    let contexto = 'Sem dados do modelo disponiveis.';
-    if (daxData.results && daxData.results[0] && daxData.results[0].tables) {
-      const row = daxData.results[0].tables[0].rows[0];
-      contexto = `Dados do modelo semantico Power BI em tempo real:
-- Periodo atual: ${row['[periodo_atual]'] || 'N/D'}
-- Periodo referencia: ${row['[periodo_ref]'] || 'N/D'}
-- Variacao Receita: ${(row['[var_receita]'] * 100).toFixed(1)}%
-- Variacao Volume: ${(row['[var_volume]'] * 100).toFixed(1)}%
-- Variacao Margem: ${(row['[var_margem]']).toFixed(2)}pp
-- Variacao Preco Sell IN: ${(row['[var_preco]'] * 100).toFixed(1)}%
-- Chaves Verdes (saudaveis): ${row['[qtd_verdes]']}
-- Chaves Amarelas (atencao): ${row['[qtd_amarelas]']}
-- Chaves Vermelhas (criticas): ${row['[qtd_vermelhas]']}`;
-    }
-
-    // Busca top 5 criticos
-    const daxCriticosRes = await fetch(
-      `https://api.powerbi.com/v1.0/myorg/groups/${process.env.PBI_WORKSPACE_ID}/datasets/${process.env.PBI_DATASET_ID}/executeQueries`,
+    // 2. Executa DAX - KPIs principais
+    const kpiRes = await fetch(
+      `https://api.powerbi.com/v1.0/myorg/groups/${workspaceId}/datasets/${datasetId}/executeQueries`,
       {
         method: 'POST',
         headers: {
@@ -89,36 +50,98 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           queries: [{
-            query: `EVALUATE TOPN(5, FILTER(
-              ADDCOLUMNS(
-                ALL(f_faturamento[Agrupamento Nivel 1]),
-                "@qtd", [Qtd Tipos Disparados],
-                "@alerta", [Alerta Chave],
-                "@c1", [Causa T1],
-                "@c2", [Causa T2],
-                "@c3", [Causa T3]
-              ), [@qtd] > 0
-            ), [@qtd], DESC)`
+            query: `EVALUATE ROW(
+              "atual", CALCULATE(MAX(d_periodo_atual[Ano-Mes Label])),
+              "ref", CALCULATE(MIN(d_periodo_ref[Ano-Mes Label])),
+              "var_rec", [Variacao % Receita],
+              "var_vol", [Variacao % Volume],
+              "var_mar", [Variacao pp Margem],
+              "var_pre", [Variacao % Preco Sell IN],
+              "verdes", [Qtd Chaves Verdes],
+              "amarelas", [Qtd Chaves Amarelas],
+              "vermelhas", [Qtd Chaves Vermelhas]
+            )`
           }],
           serializerSettings: { includeNulls: true }
         })
       }
     );
-    const criticosData = await daxCriticosRes.json();
+    const kpiData = await kpiRes.json();
+
+    // 3. Executa DAX - Familias criticas
+    const criticosRes = await fetch(
+      `https://api.powerbi.com/v1.0/myorg/groups/${workspaceId}/datasets/${datasetId}/executeQueries`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+          queries: [{
+            query: `EVALUATE TOPN(5,
+              FILTER(
+                ADDCOLUMNS(
+                  ALL(f_faturamento[Agrupamento Nivel 1]),
+                  "@qtd", [Qtd Tipos Disparados],
+                  "@alerta", [Alerta Chave],
+                  "@c1", [Causa T1],
+                  "@c2", [Causa T2],
+                  "@c3", [Causa T3]
+                ),
+                [@qtd] > 0
+              ),
+            [@qtd], DESC)`
+          }],
+          serializerSettings: { includeNulls: true }
+        })
+      }
+    );
+    const criticosData = await criticosRes.json();
+
+    // 4. Monta contexto com dados reais
+    let contexto = '';
+    if (kpiData.results && kpiData.results[0] && kpiData.results[0].tables) {
+      const r = kpiData.results[0].tables[0].rows[0];
+      const pct = v => v != null ? (v * 100).toFixed(1) + '%' : 'N/D';
+      const pp  = v => v != null ? v.toFixed(2) + 'pp' : 'N/D';
+      contexto += `DADOS DO MODELO SEMANTICO POWER BI (TEMPO REAL):
+Periodo Atual: ${r['[atual]'] || 'N/D'}
+Periodo Referencia: ${r['[ref]'] || 'N/D'}
+Variacao Receita: ${pct(r['[var_rec]'])}
+Variacao Volume: ${pct(r['[var_vol]'])}
+Variacao Margem: ${pp(r['[var_mar]'])}
+Variacao Preco Sell IN: ${pct(r['[var_pre]'])}
+Chaves Verdes (saudaveis): ${r['[verdes]']}
+Chaves Amarelas (atencao): ${r['[amarelas]']}
+Chaves Vermelhas (criticas): ${r['[vermelhas]']}`;
+    }
+
     if (criticosData.results && criticosData.results[0] && criticosData.results[0].tables) {
       const rows = criticosData.results[0].tables[0].rows || [];
       if (rows.length > 0) {
-        contexto += '\n\nTop familias com alertas:';
+        contexto += '\n\nFAMILIAS COM ALERTAS ATIVOS:';
         rows.forEach(r => {
-          contexto += `\n- ${r['f_faturamento[Agrupamento Nivel 1]']}: ${r['[@alerta]']} | Causa Preco: ${r['[@c1]'] || 'N/A'} | Causa Volume: ${r['[@c2]'] || 'N/A'} | Causa Rentab: ${r['[@c3]'] || 'N/A'}`;
+          const fam = r['f_faturamento[Agrupamento Nivel 1]'] || '';
+          const alerta = r['[@alerta]'] || '';
+          const c1 = r['[@c1]'] || '';
+          const c2 = r['[@c2]'] || '';
+          const c3 = r['[@c3]'] || '';
+          contexto += `\n- ${fam}: ${alerta}`;
+          if (c1) contexto += ` | Causa Preco: ${c1}`;
+          if (c2) contexto += ` | Causa Volume: ${c2}`;
+          if (c3) contexto += ` | Causa Rentab: ${c3}`;
         });
       }
     }
 
-    // Monta system prompt com dados reais
-    const systemComDados = (system || '') + '\n\n' + contexto + '\n\nREGRAS: Responda SEMPRE em portugues. Use SOMENTE os dados acima. NUNCA invente numeros. Se faltar dados diga claramente. Seja objetivo. Use **negrito** para numeros importantes.';
+    if (!contexto) contexto = 'Nao foi possivel carregar dados do modelo semantico.';
 
-    // Chama Claude com contexto real
+    // 5. Chama Claude com contexto real do modelo
+    const sysFinal = `Voce e assistente de negocios da Quartzolit (Saint-Gobain Brasil).
+${contexto}
+REGRAS: 1) Responda SEMPRE em portugues. 2) Use SOMENTE os dados acima, NUNCA invente numeros. 3) Se faltar dados diga claramente. 4) Seja objetivo e executivo. 5) Use **negrito** para numeros importantes. 6) Score 0-100: verde=saudavel, vermelho=critico. 7) T1=Preco T2=Volume T3=Rentabilidade. 8) Deterioracao Sistemica=T1+T2+T3 juntos.`;
+
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -129,7 +152,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 800,
-        system: systemComDados,
+        system: sysFinal,
         messages: messages
       })
     });
