@@ -1,223 +1,187 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Quartzolit AI</title>
-
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f7f7f7;
-      color: #111;
-    }
-
-    .topbar {
-      height: 42px;
-      background: #000;
-      color: #ffd100;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 14px;
-      font-weight: bold;
-      border-bottom: 3px solid #ffd100;
-    }
-
-    .subtitle {
-      color: #aaa;
-      font-size: 12px;
-      font-weight: normal;
-    }
-
-    .wrap {
-      padding: 14px;
-      height: calc(100vh - 70px);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .intro {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      padding: 14px;
-      max-width: 620px;
-    }
-
-    .quick {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-    }
-
-    .quick button {
-      border: 1px solid #ddd;
-      background: #f3f3f3;
-      border-radius: 18px;
-      padding: 8px 14px;
-      cursor: pointer;
-    }
-
-    #chat {
-      flex: 1;
-      overflow-y: auto;
-      padding-bottom: 10px;
-    }
-
-    .msg {
-      max-width: 75%;
-      padding: 12px 14px;
-      border-radius: 12px;
-      margin: 10px 0;
-      line-height: 1.4;
-      white-space: pre-wrap;
-    }
-
-    .user {
-      background: #000;
-      color: #ffd100;
-      margin-left: auto;
-      border-bottom-right-radius: 2px;
-    }
-
-    .bot {
-      background: #fff;
-      color: #111;
-      border: 1px solid #ddd;
-      margin-right: auto;
-      border-bottom-left-radius: 2px;
-    }
-
-    .inputArea {
-      display: flex;
-      gap: 8px;
-      border-top: 2px solid #ffd100;
-      padding-top: 10px;
-    }
-
-    input {
-      flex: 1;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 14px;
-    }
-
-    .send {
-      width: 54px;
-      border: none;
-      border-radius: 8px;
-      background: #ffd100;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    pre {
-      white-space: pre-wrap;
-      font-size: 12px;
-      background: #f2f2f2;
-      padding: 8px;
-      border-radius: 8px;
-      overflow-x: auto;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quartzolit AI</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f5f5f5}
+.wrap{display:flex;flex-direction:column;width:100%;height:100vh}
+.hdr{background:#000;border-bottom:3px solid #FFD100;padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.dot{width:7px;height:7px;background:#FFD100;border-radius:50%;animation:p 2s infinite}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr h1{font-size:12px;font-weight:700;color:#FFD100;letter-spacing:1px}
+.hdr em{font-size:10px;color:#888;margin-left:auto;font-style:normal}
+.msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.bbl{max-width:86%;padding:9px 13px;border-radius:12px;font-size:12px;line-height:1.55;word-break:break-word}
+.bbl.u{background:#000;color:#FFD100;align-self:flex-end;border-radius:12px 12px 3px 12px;font-weight:600}
+.bbl.a{background:#fff;color:#222;align-self:flex-start;border:1px solid #ddd;border-radius:12px 12px 12px 3px}
+.bbl.a b{color:#000}
+.bbl.t{background:#fff;border:1px solid #ddd;align-self:flex-start;padding:8px 13px}
+.dots span{display:inline-block;width:6px;height:6px;background:#FFD100;border-radius:50%;animation:b 1.2s infinite;margin:0 2px}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes b{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+.suggs{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.sg{background:#f0f0f0;border:1.5px solid #ddd;color:#555;font-size:11px;padding:5px 11px;border-radius:14px;cursor:pointer;font-family:inherit}
+.sg:hover{border-color:#FFD100;color:#000}
+.foot{padding:8px 10px;background:#fff;border-top:2px solid #FFD100;display:flex;gap:7px;align-items:center;flex-shrink:0}
+#editor{flex:1;background:#f5f5f5;border:1.5px solid #ccc;color:#111;padding:9px 13px;border-radius:9px;font-size:13px;outline:none;font-family:inherit;min-height:38px;max-height:80px;overflow-y:auto;cursor:text}
+#editor:focus{border-color:#FFD100;background:#fff}
+#editor:empty:before{content:'Digite sua pergunta sobre os dados...';color:#aaa;pointer-events:none}
+#btn{background:#FFD100;color:#000;border:none;padding:9px 18px;border-radius:9px;font-size:14px;font-weight:900;cursor:pointer;flex-shrink:0}
+#btn:disabled{opacity:.35}
+</style>
 </head>
-
 <body>
-  <div class="topbar">
-    <div>● QUARTZOLIT AI</div>
-    <div class="subtitle">Assistente de Dados</div>
+<div class="wrap">
+  <div class="hdr">
+    <div class="dot"></div>
+    <h1>QUARTZOLIT AI</h1>
+    <em id="hdrInfo">Assistente de Dados</em>
   </div>
-
-  <div class="wrap">
-    <div class="intro">
-      Olá! Sou a IA da Quartzolit com acesso ao modelo semântico.<br><br>
-      Pergunte sobre <b>receita, volume, margem, score, alertas e ponto de ataque</b>.
-
-      <div class="quick">
-        <button onclick="window.enviarPergunta('Quais são as famílias críticas?')">Famílias críticas?</button>
-        <button onclick="window.enviarPergunta('Resumo do cenário')">Resumo do cenário</button>
-        <button onclick="window.enviarPergunta('Qual a receita por UF?')">Receita por UF</button>
-        <button onclick="window.enviarPergunta('Qual o score por categoria?')">Score por categoria</button>
-      </div>
-    </div>
-
-    <div id="chat"></div>
-
-    <div class="inputArea">
-      <input id="pergunta" placeholder="Digite sua pergunta aqui..." />
-      <button class="send" onclick="window.enviar()">▶</button>
-    </div>
+  <div class="msgs" id="msgs">
+    <div class="bbl a" id="msgInicial">Ola! Sou a IA da Quartzolit.</div>
   </div>
+  <div class="foot">
+    <div id="editor" contenteditable="true"></div>
+    <button id="btn">&#9658;</button>
+  </div>
+</div>
+<script>
+// Le parametros da URL passados pelo Power BI via iframe
+var p = new URLSearchParams(window.location.search);
+var atual = p.get('atual') || '';
+var ref = p.get('ref') || '';
+var uf = p.get('uf') || 'Todos';
+var vd = p.get('vd') || '0';
+var va = p.get('va') || '0';
+var vv = p.get('vv') || '0';
+var rec = p.get('rec') || '0';
+var vol = p.get('vol') || '0';
+var mar = p.get('mar') || '0';
+var pre = p.get('pre') || '0';
 
-  <script>
-    console.log("INDEX FINAL CARREGADO");
+var temDados = atual !== '' && atual !== 'null';
 
-    window.enviar = async function () {
-      const input = document.getElementById("pergunta");
-      const pergunta = input.value.trim();
+// Atualiza header
+if (temDados) {
+  document.getElementById('hdrInfo').textContent = atual + ' vs ' + ref + ' - ' + uf;
+}
 
-      if (!pergunta) return;
+// Monta system prompt
+var SYS;
+if (temDados) {
+  SYS = 'Voce e assistente executivo de negocios da Quartzolit (Saint-Gobain Brasil). '
+    + 'DADOS DO MODELO SEMANTICO POWER BI (TEMPO REAL): '
+    + 'Periodo atual=' + atual + ', Referencia=' + ref + ', UF=' + uf + '. '
+    + 'Score: ' + vv + ' familias vermelhas (criticas), ' + va + ' amarelas, ' + vd + ' verdes. '
+    + 'Variacoes vs referencia: Receita=' + rec + '%, Volume=' + vol + '%, Margem=' + mar + 'pp, Preco Sell IN=' + pre + '%. '
+    + 'REGRAS: 1) Responda SEMPRE em portugues. '
+    + '2) Use SOMENTE os dados fornecidos. NUNCA invente numeros. '
+    + '3) Se faltar dados diga claramente. '
+    + '4) Seja objetivo. Use **negrito** para numeros. '
+    + '5) Score: verde=saudavel, vermelho=critico. '
+    + '6) T1=Problema Preco, T2=Volume, T3=Rentabilidade. '
+    + '7) Deterioracao Sistemica = T1+T2+T3 juntos.';
+} else {
+  SYS = 'Voce e assistente executivo de negocios da Quartzolit (Saint-Gobain Brasil). '
+    + 'Responda em portugues. '
+    + 'Avise que os dados do modelo semantico nao foram carregados. '
+    + 'Oriente o usuario a acessar este chat pelo Power BI para ter dados em tempo real.';
+}
 
-      await window.enviarPergunta(pergunta);
-      input.value = "";
-    };
+// Monta mensagem inicial
+var mi = document.getElementById('msgInicial');
+if (temDados) {
+  mi.innerHTML = 'Ola! Sou a IA da Quartzolit com acesso ao modelo semantico em tempo real.<br><br>'
+    + 'Periodo: <b>' + atual + ' vs ' + ref + '</b> | UF: <b>' + uf + '</b><br>'
+    + 'Score: <b style="color:#c00">' + vv + ' vermelhas</b>, <b>' + va + ' amarelas</b>, <b style="color:#4a0">' + vd + ' verdes</b><br>'
+    + 'Variacoes: Receita <b>' + rec + '%</b> | Volume <b>' + vol + '%</b> | Margem <b>' + mar + 'pp</b> | Preco <b>' + pre + '%</b><br><br>'
+    + 'Pergunte sobre <b>scores, alertas, variacoes e ponto de ataque</b>!'
+    + '<div class="suggs">'
+    + '<span class="sg" id="s1">Familias criticas?</span>'
+    + '<span class="sg" id="s2">Indicadores vs ano anterior?</span>'
+    + '<span class="sg" id="s3">Acao recomendada?</span>'
+    + '<span class="sg" id="s4">Resumo do cenario</span>'
+    + '</div>';
+} else {
+  mi.innerHTML = 'Ola! Sou a IA da Quartzolit.<br><br>'
+    + 'Para ter acesso aos dados em tempo real, acesse este chat pelo <b>Power BI</b>.<br><br>'
+    + 'Pergunte sobre <b>scores, alertas, variacoes e ponto de ataque</b>!'
+    + '<div class="suggs">'
+    + '<span class="sg" id="s1">Familias criticas?</span>'
+    + '<span class="sg" id="s2">Indicadores vs ano anterior?</span>'
+    + '<span class="sg" id="s3">Acao recomendada?</span>'
+    + '<span class="sg" id="s4">Resumo do cenario</span>'
+    + '</div>';
+}
 
-    window.enviarPergunta = async function (pergunta) {
-      const chat = document.getElementById("chat");
+// Registra eventos das sugestoes
+['s1','s2','s3','s4'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('click', function() { ed.textContent = this.textContent; go(); });
+});
 
-      chat.innerHTML += `<div class="msg user">${pergunta}</div>`;
+var H = [];
+var M = document.getElementById('msgs');
+var ed = document.getElementById('editor');
+var btn = document.getElementById('btn');
 
-      const loading = document.createElement("div");
-      loading.className = "msg bot";
-      loading.innerHTML = "Consultando modelo semântico...";
-      chat.appendChild(loading);
+function sb() { M.scrollTop = M.scrollHeight; }
 
-      chat.scrollTop = chat.scrollHeight;
+function am(t, c) {
+  var d = document.createElement('div');
+  d.className = 'bbl ' + c;
+  d.innerHTML = t.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+  M.appendChild(d);
+  sb();
+}
 
-      try {
-        const response = await fetch("https://quartzolit-api-6a8h.vercel.app/api/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            question: pergunta
-          })
-        });
+function st() {
+  var d = document.createElement('div');
+  d.className = 'bbl t';
+  d.id = 'tp';
+  d.innerHTML = "<div class='dots'><span></span><span></span><span></span></div>";
+  M.appendChild(d);
+  sb();
+}
 
-        const data = await response.json();
+function rt() { var t = document.getElementById('tp'); if (t) t.remove(); }
 
-        console.log("STATUS:", response.status);
-        console.log("RESPOSTA API:", data);
+function go() {
+  var t = (ed.textContent || ed.innerText || '').trim();
+  if (!t) return;
+  ed.textContent = '';
+  btn.disabled = true;
+  am(t, 'u');
+  H.push({ role: 'user', content: t });
+  st();
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system: SYS, messages: H })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    rt();
+    if (d.content && d.content[0]) {
+      var rep = d.content[0].text;
+      H.push({ role: 'assistant', content: rep });
+      am(rep, 'a');
+    } else if (d.error) {
+      am('Erro: ' + d.error.message, 'a');
+    } else {
+      am('Sem resposta.', 'a');
+    }
+    btn.disabled = false;
+    ed.focus();
+  }).catch(function(e) { rt(); am('Erro: ' + e.message, 'a'); btn.disabled = false; });
+}
 
-        if (!response.ok) {
-          loading.innerHTML = `
-Erro: ${data.error || "Erro desconhecido"}
-
-${JSON.stringify(data.details || data, null, 2)}
-          `;
-          return;
-        }
-
-        loading.innerHTML = data.answer || "A API respondeu, mas não retornou answer.";
-
-      } catch (error) {
-        console.error("ERRO FETCH:", error);
-        loading.innerHTML = "Erro de conexão: " + error.message;
-      }
-
-      chat.scrollTop = chat.scrollHeight;
-    };
-
-    document.getElementById("pergunta").addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        window.enviar();
-      }
-    });
-  </script>
+btn.addEventListener('click', function() { go(); });
+ed.addEventListener('keydown', function(e) { if (e.keyCode === 13 && !e.shiftKey) { e.preventDefault(); go(); } });
+function fix() { var w = document.querySelector('.wrap'); if (w) w.style.height = window.innerHeight + 'px'; }
+window.addEventListener('resize', fix);
+fix();
+</script>
 </body>
 </html>
