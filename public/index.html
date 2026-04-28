@@ -10,7 +10,6 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
 .wrap{display:flex;flex-direction:column;width:100%;height:100vh}
 .hdr{background:#000;border-bottom:3px solid #FFD100;padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0}
 .dot{width:7px;height:7px;background:#FFD100;border-radius:50%;animation:pu 2s infinite}
-.dot.red{background:#c00}
 @keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
 .hdr h1{font-size:12px;font-weight:700;color:#FFD100;letter-spacing:1px}
 .hdr em{font-size:10px;color:#888;margin-left:auto;font-style:normal}
@@ -36,125 +35,123 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
 </head>
 <body>
 <div class="wrap">
-  <div class="hdr"><div class="dot" id="statusDot"></div><h1>QUARTZOLIT AI</h1><em id="hdrInfo">Carregando dados...</em></div>
-  <div class="msgs" id="msgs"><div class="bbl a" id="msgInicial">Conectando ao modelo semantico Power BI...</div></div>
-  <div class="foot"><div id="editor" contenteditable="true"></div><button id="btn" disabled>&#9658;</button></div>
+  <div class="hdr"><div class="dot"></div><h1>QUARTZOLIT AI</h1><em id="hdrInfo">Assistente de Dados</em></div>
+  <div class="msgs" id="msgs"><div class="bbl a" id="msgInicial">Ola! Sou a IA da Quartzolit.</div></div>
+  <div class="foot"><div id="editor" contenteditable="true"></div><button id="btn">&#9658;</button></div>
 </div>
 <script>
-var pbiCtx = null;
+// Le parametros passados pelo Power BI via iframe URL
+var p = new URLSearchParams(window.location.search);
+var atual = p.get('atual') || '';
+var ref   = p.get('ref')   || '';
+var uf    = p.get('uf')    || 'Todos';
+var vd    = p.get('vd')    || '0';
+var va    = p.get('va')    || '0';
+var vv    = p.get('vv')    || '0';
+var rec   = p.get('rec')   || '0';
+var vol   = p.get('vol')   || '0';
+var mar   = p.get('mar')   || '0';
+var pre   = p.get('pre')   || '0';
+
+var temDados = atual !== '' && atual !== 'null' && atual !== 'undefined';
+
+// Monta contexto com dados do Power BI (calculados pelo Desktop, zero latencia)
+var pbiCtx = temDados
+  ? 'DADOS DO MODELO POWER BI (TEMPO REAL):\n'
+    + 'Periodo Atual: ' + atual + ' | Referencia: ' + ref + ' | UF: ' + uf + '\n'
+    + 'Variacoes: Receita=' + rec + '% | Volume=' + vol + '% | Margem=' + mar + 'pp | Preco=' + pre + '%\n'
+    + 'Score: ' + vd + ' verdes, ' + va + ' amarelas, ' + vv + ' vermelhas (criticas)'
+  : null;
+
+// Atualiza header
+if (temDados) {
+  document.getElementById('hdrInfo').textContent = atual + ' vs ' + ref + ' - ' + uf;
+}
+
+// Monta mensagem inicial
+var suggs = '<div class="suggs">'
+  + '<span class="sg" id="s1">Familias criticas?</span>'
+  + '<span class="sg" id="s2">Indicadores vs ano anterior?</span>'
+  + '<span class="sg" id="s3">Acao recomendada?</span>'
+  + '<span class="sg" id="s4">Resumo do cenario</span>'
+  + '</div>';
+
+var mi = document.getElementById('msgInicial');
+if (temDados) {
+  mi.innerHTML = 'Ola! IA da Quartzolit com dados do modelo em tempo real.<br><br>'
+    + 'Periodo: <b>' + atual + ' vs ' + ref + '</b> | UF: <b>' + uf + '</b><br>'
+    + 'Score: <b style="color:#c00">' + vv + ' vermelhas</b>, <b>' + va + ' amarelas</b>, <b style="color:#4a0">' + vd + ' verdes</b><br>'
+    + 'Variacoes: Receita <b>' + rec + '%</b> | Volume <b>' + vol + '%</b> | Margem <b>' + mar + 'pp</b> | Preco <b>' + pre + '%</b><br><br>'
+    + 'Pergunte sobre <b>scores, alertas, variacoes e ponto de ataque</b>!' + suggs;
+} else {
+  mi.innerHTML = 'Ola! Sou a IA da Quartzolit.<br><br>'
+    + 'Pergunte sobre <b>scores, alertas e variacoes</b>!' + suggs;
+}
+
+['s1','s2','s3','s4'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('click', function() { ed.textContent = this.textContent; go(); });
+});
+
+var H = [];
 var M = document.getElementById('msgs');
 var ed = document.getElementById('editor');
 var btn = document.getElementById('btn');
-var dot = document.getElementById('statusDot');
-var hdr = document.getElementById('hdrInfo');
-var mi = document.getElementById('msgInicial');
 
-function sb(){ M.scrollTop = M.scrollHeight; }
+function sb() { M.scrollTop = M.scrollHeight; }
 
-function boldify(t){
+function boldify(t) {
   var parts = t.split('**');
   var r = '';
-  for(var i=0;i<parts.length;i++) r += i%2===0 ? parts[i] : '<b>'+parts[i]+'</b>';
+  for (var i = 0; i < parts.length; i++) r += i % 2 === 0 ? parts[i] : '<b>' + parts[i] + '</b>';
   return r.split('\n').join('<br>');
 }
 
-function am(t,c){
-  var d=document.createElement('div');
-  d.className='bbl '+c;
-  d.innerHTML=boldify(t);
+function am(t, c) {
+  var d = document.createElement('div');
+  d.className = 'bbl ' + c;
+  d.innerHTML = boldify(t);
   M.appendChild(d); sb();
 }
 
-function st(){
-  var d=document.createElement('div');
-  d.className='bbl t'; d.id='tp';
-  d.innerHTML="<div class='dots'><span></span><span></span><span></span></div>";
+function st() {
+  var d = document.createElement('div');
+  d.className = 'bbl t'; d.id = 'tp';
+  d.innerHTML = "<div class='dots'><span></span><span></span><span></span></div>";
   M.appendChild(d); sb();
 }
 
-function rt(){ var t=document.getElementById('tp'); if(t)t.remove(); }
+function rt() { var t = document.getElementById('tp'); if (t) t.remove(); }
 
-var suggs = '<div class="suggs">' +
-  '<span class="sg" id="s1">Familias criticas?</span>' +
-  '<span class="sg" id="s2">Indicadores vs ano anterior?</span>' +
-  '<span class="sg" id="s3">Acao recomendada?</span>' +
-  '<span class="sg" id="s4">Resumo do cenario</span>' +
-  '</div>';
+function go() {
+  var t = (ed.textContent || ed.innerText || '').trim();
+  if (!t) return;
+  ed.textContent = ''; btn.disabled = true;
+  am(t, 'u'); H.push({ role: 'user', content: t }); st();
 
-// ETAPA 1: Busca dados do PBI via /api/dados (endpoint separado, limite 10s)
-fetch('/api/dados')
-  .then(function(r){ return r.json(); })
-  .then(function(d){
-    if(d.context){
-      pbiCtx = d.context;
-      // Extrai periodo do contexto
-      var match = pbiCtx.match(/Periodo: ([^
-]+)/);
-      var periodo = match ? match[1] : 'Dados carregados';
-      hdr.textContent = periodo;
-      dot.classList.remove('red');
-      mi.innerHTML = 'Ola! IA da Quartzolit conectada ao modelo semantico.<br><br>'
-        + '<small style="color:#666">' + pbiCtx.split('\n').slice(0,3).join(' | ') + '</small><br><br>'
-        + 'Pergunte sobre <b>scores, alertas, variacoes e ponto de ataque</b>!' + suggs;
-      btn.disabled = false;
-      ['s1','s2','s3','s4'].forEach(function(id){
-        var el=document.getElementById(id);
-        if(el) el.addEventListener('click',function(){ ed.textContent=this.textContent; go(); });
-      });
-    } else {
-      dot.classList.add('red');
-      hdr.textContent = 'Erro ao carregar dados';
-      mi.innerHTML = 'Erro ao conectar ao modelo: ' + (d.error||'desconhecido') + '<br><br>Tente recarregar a pagina.' + suggs;
-      btn.disabled = false;
-      ['s1','s2','s3','s4'].forEach(function(id){
-        var el=document.getElementById(id);
-        if(el) el.addEventListener('click',function(){ ed.textContent=this.textContent; go(); });
-      });
-    }
-  })
-  .catch(function(e){
-    dot.classList.add('red');
-    hdr.textContent = 'Sem conexao PBI';
-    mi.innerHTML = 'Nao foi possivel carregar dados do Power BI.<br><br>Pergunte assim mesmo:' + suggs;
-    btn.disabled = false;
-    ['s1','s2','s3','s4'].forEach(function(id){
-      var el=document.getElementById(id);
-      if(el) el.addEventListener('click',function(){ ed.textContent=this.textContent; go(); });
-    });
-  });
-
-var H = [];
-
-function go(){
-  var t=(ed.textContent||ed.innerText||'').trim();
-  if(!t) return;
-  ed.textContent=''; btn.disabled=true;
-  am(t,'u'); H.push({role:'user',content:t}); st();
-
-  // ETAPA 2: Envia mensagem + contexto PBI para /api/chat (so Claude, limite 10s)
-  fetch('/api/chat',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ messages:H, pbiContext: pbiCtx })
-  }).then(function(r){ return r.json(); }).then(function(d){
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: H, pbiContext: pbiCtx })
+  }).then(function(r) { return r.json(); }).then(function(d) {
     rt();
-    if(d.content&&d.content[0]){
-      var rep=d.content[0].text;
-      H.push({role:'assistant',content:rep});
-      am(rep,'a');
-    } else if(d.error){
-      am('Erro: '+(d.error.message||d.error),'a');
+    if (d.content && d.content[0]) {
+      var rep = d.content[0].text;
+      H.push({ role: 'assistant', content: rep });
+      am(rep, 'a');
+    } else if (d.error) {
+      am('Erro: ' + (d.error.message || d.error), 'a');
     } else {
-      am('Sem resposta.','a');
+      am('Sem resposta.', 'a');
     }
-    btn.disabled=false; ed.focus();
-  }).catch(function(e){ rt(); am('Erro: '+e.message,'a'); btn.disabled=false; });
+    btn.disabled = false; ed.focus();
+  }).catch(function(e) { rt(); am('Erro: ' + e.message, 'a'); btn.disabled = false; });
 }
 
-btn.addEventListener('click',function(){ go(); });
-ed.addEventListener('keydown',function(e){ if(e.keyCode===13&&!e.shiftKey){e.preventDefault();go();} });
-function fix(){ var w=document.querySelector('.wrap'); if(w)w.style.height=window.innerHeight+'px'; }
-window.addEventListener('resize',fix); fix();
+btn.addEventListener('click', function() { go(); });
+ed.addEventListener('keydown', function(e) { if (e.keyCode === 13 && !e.shiftKey) { e.preventDefault(); go(); } });
+function fix() { var w = document.querySelector('.wrap'); if (w) w.style.height = window.innerHeight + 'px'; }
+window.addEventListener('resize', fix); fix();
 </script>
 </body>
 </html>
