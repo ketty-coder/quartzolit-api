@@ -12,7 +12,7 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
 .dot{width:7px;height:7px;background:#FFD100;border-radius:50%;animation:p 2s infinite}
 @keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
 .hdr h1{font-size:12px;font-weight:700;color:#FFD100;letter-spacing:1px}
-.hdr em{font-size:10px;color:#777;margin-left:auto;font-style:normal;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hdr em{font-size:10px;color:#888;margin-left:auto;font-style:normal}
 .msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:0}
 .bbl{max-width:86%;padding:9px 13px;border-radius:12px;font-size:12px;line-height:1.55;word-break:break-word}
 .bbl.u{background:#000;color:#FFD100;align-self:flex-end;border-radius:12px 12px 3px 12px;font-weight:600}
@@ -38,12 +38,10 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
   <div class="hdr">
     <div class="dot"></div>
     <h1>QUARTZOLIT AI</h1>
-    <em id="periodo">Assistente de Dados</em>
+    <em id="hdrInfo">Assistente de Dados</em>
   </div>
   <div class="msgs" id="msgs">
-    <div class="bbl a" id="msgInicial">
-      Carregando dados do modelo...
-    </div>
+    <div class="bbl a" id="msgInicial">Carregando...</div>
   </div>
   <div class="foot">
     <div id="editor" contenteditable="true"></div>
@@ -51,69 +49,66 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
   </div>
 </div>
 <script>
-// Le contexto da URL (?ctx=...)
-var CTX = {};
-var SYS = 'Voce e assistente de negocios da Quartzolit (Saint-Gobain Brasil). Responda em portugues. Use somente dados fornecidos. Se faltar dados diga claramente. Seja objetivo. Use **negrito** para numeros. Score 0-100: verde=saudavel, vermelho=critico. T1=Preco T2=Volume T3=Rentabilidade.';
+var p = new URLSearchParams(window.location.search);
+var atual = p.get('atual') || '';
+var ref   = p.get('ref')   || '';
+var uf    = p.get('uf')    || 'Todos';
+var vd    = p.get('vd')    || '0';
+var va    = p.get('va')    || '0';
+var vv    = p.get('vv')    || '0';
+var rec   = p.get('rec')   || '0';
+var vol   = p.get('vol')   || '0';
+var mar   = p.get('mar')   || '0';
+var pre   = p.get('pre')   || '0';
 
-try {
-  var params = new URLSearchParams(window.location.search);
-  var ctxRaw = params.get('ctx');
-  if (ctxRaw) {
-    CTX = JSON.parse(decodeURIComponent(ctxRaw));
-    SYS = 'Voce e assistente de negocios da Quartzolit (Saint-Gobain Brasil). ' +
-      'Dados do modelo semantico Power BI em tempo real: ' + JSON.stringify(CTX) + '. ' +
-      'REGRAS: 1) Responda SEMPRE em portugues. ' +
-      '2) Use SOMENTE os dados fornecidos acima. NUNCA invente numeros. ' +
-      '3) Se nao tiver dados suficientes diga claramente. ' +
-      '4) Seja objetivo e executivo. Use listas quando util. ' +
-      '5) Use **negrito** para numeros importantes. ' +
-      '6) Score Geral 0-100: verde=saudavel (baixo score), vermelho=critico (alto score). ' +
-      '7) T1=Problema Preco, T2=Problema Volume, T3=Problema Rentabilidade. ' +
-      '8) Deterioracao Sistemica = T1+T2+T3 ativos na mesma familia.';
+var temDados = atual !== '';
 
-    // Atualiza header e msg inicial
-    var periodo = (CTX.periodo_atual || '') + ' vs ' + (CTX.periodo_ref || '');
-    document.getElementById('periodo').textContent = periodo + ' · ' + (CTX.uf || 'Todos');
-
-    var score = CTX.score || {};
-    var vars = CTX.variacoes || {};
-    document.getElementById('msgInicial').innerHTML =
-      'Ol\u00e1! Sou a IA da Quartzolit com acesso ao modelo sem\u00e2ntico.<br><br>' +
-      'Per\u00edodo: <b>' + periodo + '</b><br>' +
-      'Chaves: <b>' + (score.vermelhas||0) + ' vermelhas</b>, ' + (score.amarelas||0) + ' amarelas, ' + (score.verdes||0) + ' verdes<br>' +
-      'Varia\u00e7\u00f5es: Receita <b>' + (vars.receita_pct ? (vars.receita_pct*100).toFixed(1)+'%' : 'n/d') + '</b>, ' +
-      'Volume <b>' + (vars.volume_pct ? (vars.volume_pct*100).toFixed(1)+'%' : 'n/d') + '</b><br><br>' +
-      'Pergunte sobre <b>scores, alertas, varia\u00e7\u00f5es e ponto de ataque</b>!' +
-      '<div class="suggs">' +
-      '<span class="sg" id="s1">Fam\u00edlias cr\u00edticas?</span>' +
-      '<span class="sg" id="s2">Indicadores vs ano anterior?</span>' +
-      '<span class="sg" id="s3">A\u00e7\u00e3o recomendada?</span>' +
-      '<span class="sg" id="s4">Resumo do cen\u00e1rio</span>' +
-      '</div>';
-
-    // Re-registra eventos das sugestoes
-    ['s1','s2','s3','s4'].forEach(function(id) {
-      var el = document.getElementById(id);
-      if(el) el.addEventListener('click', function(){ ed.textContent = this.textContent; go(); });
-    });
-  } else {
-    document.getElementById('msgInicial').innerHTML =
-      'Ol\u00e1! Sou a IA da Quartzolit.<br><br>' +
-      'Pergunte sobre <b>scores, alertas, varia\u00e7\u00f5es e ponto de ataque</b>!' +
-      '<div class="suggs">' +
-      '<span class="sg" id="s1">Fam\u00edlias cr\u00edticas?</span>' +
-      '<span class="sg" id="s2">Indicadores vs ano anterior?</span>' +
-      '<span class="sg" id="s3">A\u00e7\u00e3o recomendada?</span>' +
-      '<span class="sg" id="s4">Resumo do cen\u00e1rio</span>' +
-      '</div>';
-    ['s1','s2','s3','s4'].forEach(function(id) {
-      var el = document.getElementById(id);
-      if(el) el.addEventListener('click', function(){ ed.textContent = this.textContent; go(); });
-    });
-  }
-} catch(e) {
-  document.getElementById('msgInicial').textContent = 'Erro ao carregar contexto: ' + e.message;
+if(temDados){
+  document.getElementById('hdrInfo').textContent = atual + ' vs ' + ref + ' · ' + uf;
 }
+
+var SYS;
+if(temDados){
+  SYS = 'Voce e assistente de negocios da Quartzolit (Saint-Gobain Brasil). ' +
+    'Dados do modelo semantico Power BI: ' +
+    'Periodo atual=' + atual + ', Referencia=' + ref + ', UF=' + uf + '. ' +
+    'Score: ' + vv + ' familias vermelhas (criticas), ' + va + ' amarelas, ' + vd + ' verdes. ' +
+    'Variacoes vs referencia: Receita=' + rec + '%, Volume=' + vol + '%, Margem=' + mar + 'pp, Preco Sell IN=' + pre + '%. ' +
+    'REGRAS: 1) Responda SEMPRE em portugues. ' +
+    '2) Use SOMENTE os dados fornecidos. NUNCA invente numeros. ' +
+    '3) Se faltar dados diga claramente. ' +
+    '4) Seja objetivo. Use **negrito** para numeros. ' +
+    '5) Score: verde=saudavel, vermelho=critico. ' +
+    '6) T1=Problema Preco, T2=Volume, T3=Rentabilidade. ' +
+    '7) Deterioracao Sistemica = T1+T2+T3 juntos.';
+} else {
+  SYS = 'Voce e assistente de negocios da Quartzolit (Saint-Gobain Brasil). Responda em portugues. Informe que nao ha dados do modelo carregados.';
+}
+
+var msgInicial = document.getElementById('msgInicial');
+if(temDados){
+  msgInicial.innerHTML =
+    'Olá! Sou a IA da Quartzolit com acesso ao modelo semântico.<br><br>' +
+    'Período: <b>' + atual + ' vs ' + ref + '</b> · UF: <b>' + uf + '</b><br>' +
+    'Score: <b style="color:#c00">' + vv + ' vermelhas</b>, <b style="color:#999">' + va + ' amarelas</b>, <b style="color:#4a0">' + vd + ' verdes</b><br>' +
+    'Variações: Receita <b>' + rec + '%</b> · Volume <b>' + vol + '%</b> · Margem <b>' + mar + 'pp</b> · Preço <b>' + pre + '%</b><br><br>' +
+    'Pergunte sobre <b>scores, alertas, variações e ponto de ataque</b>!' +
+    '<div class="suggs">' +
+    '<span class="sg" id="s1">Famílias críticas?</span>' +
+    '<span class="sg" id="s2">Indicadores vs ano anterior?</span>' +
+    '<span class="sg" id="s3">Ação recomendada?</span>' +
+    '<span class="sg" id="s4">Resumo do cenário</span>' +
+    '</div>';
+} else {
+  msgInicial.innerHTML =
+    'Olá! Abra este chat a partir do Power BI para ter acesso aos dados do modelo semântico.<br><br>' +
+    '<span style="color:#999;font-size:11px;">Sem dados carregados.</span>';
+}
+
+['s1','s2','s3','s4'].forEach(function(id){
+  var el = document.getElementById(id);
+  if(el) el.addEventListener('click', function(){ ed.textContent = this.textContent; go(); });
+});
 
 var H = [];
 var M = document.getElementById('msgs');
@@ -121,32 +116,49 @@ var ed = document.getElementById('editor');
 var btn = document.getElementById('btn');
 
 function sb(){M.scrollTop = M.scrollHeight}
-function am(t,c){var d=document.createElement('div');d.className='bbl '+c;d.innerHTML=t.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');M.appendChild(d);sb()}
-function st(){var d=document.createElement('div');d.className='bbl t';d.id='tp';d.innerHTML="<div class='dots'><span></span><span></span><span></span></div>";M.appendChild(d);sb()}
-function rt(){var t=document.getElementById('tp');if(t)t.remove()}
+function am(t,c){
+  var d = document.createElement('div');
+  d.className = 'bbl ' + c;
+  d.innerHTML = t.replace(/**([^*]+)**/g,'<b>$1</b>').replace(/
+/g,'<br>');
+  M.appendChild(d); sb();
+}
+function st(){
+  var d = document.createElement('div');
+  d.className = 'bbl t'; d.id = 'tp';
+  d.innerHTML = "<div class='dots'><span></span><span></span><span></span></div>";
+  M.appendChild(d); sb();
+}
+function rt(){var t = document.getElementById('tp'); if(t) t.remove();}
 
 function go(){
-  var t=(ed.textContent||ed.innerText||'').trim();
-  if(!t)return;
-  ed.textContent='';btn.disabled=true;
-  am(t,'u');H.push({role:'user',content:t});st();
-  fetch('/api/chat',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({system:SYS,messages:H})
-  }).then(function(r){return r.json()}).then(function(d){
+  var t = (ed.textContent || ed.innerText || '').trim();
+  if(!t) return;
+  ed.textContent = ''; btn.disabled = true;
+  am(t, 'u'); H.push({role:'user', content:t}); st();
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({system: SYS, messages: H})
+  }).then(function(r){ return r.json(); }).then(function(d){
     rt();
-    if(d.content&&d.content[0]){var rep=d.content[0].text;H.push({role:'assistant',content:rep});am(rep,'a')}
-    else if(d.error){am('Erro: '+d.error.message,'a')}
-    else{am('Sem resposta.','a')}
-    btn.disabled=false;ed.focus();
-  }).catch(function(e){rt();am('Erro: '+e.message,'a');btn.disabled=false});
+    if(d.content && d.content[0]){
+      var rep = d.content[0].text;
+      H.push({role:'assistant', content:rep});
+      am(rep, 'a');
+    } else if(d.error){
+      am('Erro: ' + d.error.message, 'a');
+    } else {
+      am('Sem resposta.', 'a');
+    }
+    btn.disabled = false; ed.focus();
+  }).catch(function(e){ rt(); am('Erro: ' + e.message, 'a'); btn.disabled = false; });
 }
 
-btn.addEventListener('click',function(){go()});
-ed.addEventListener('keydown',function(e){if(e.keyCode===13&&!e.shiftKey){e.preventDefault();go()}});
-function fix(){var w=document.querySelector('.wrap');if(w)w.style.height=window.innerHeight+'px'}
-window.addEventListener('resize',fix);fix();
+btn.addEventListener('click', function(){ go(); });
+ed.addEventListener('keydown', function(e){ if(e.keyCode===13&&!e.shiftKey){e.preventDefault();go();} });
+function fix(){ var w = document.querySelector('.wrap'); if(w) w.style.height = window.innerHeight + 'px'; }
+window.addEventListener('resize', fix); fix();
 </script>
 </body>
 </html>
