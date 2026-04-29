@@ -9,115 +9,93 @@ export default async function handler(req, res) {
     const { messages, pbiContext } = req.body;
     if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: 'messages required' });
 
-    const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-    const pbiBase = `https://api.powerbi.com/v1.0/myorg/groups/${process.env.WORKSPACE_ID}/datasets/${process.env.DATASET_ID}/executeQueries`;
+    const KEY = process.env.ANTHROPIC_API_KEY;
+    const pbiUrl = 'https://api.powerbi.com/v1.0/myorg/groups/' + process.env.WORKSPACE_ID + '/datasets/' + process.env.DATASET_ID + '/executeQueries';
 
-    // Catalogo de medidas do modelo semantico
-    const CATALOGO = `MEDIDAS DISPONIVEIS NO MODELO SEMANTICO:
-- [Faturamento Pocket]: valor absoluto do faturamento
-- [Receita]: evolucao da receita obtida
-- [Receita Atual]: receita no periodo DE selecionado
-- [Receita Ref]: receita no periodo ATE selecionado
-- [Variacao % Receita]: variacao % entre os dois periodos
-- [Volume]: evolucao de volume (Preco Constante)
+    const CATALOGO = `MODELO SEMANTICO QUARTZOLIT - REFERENCIA DAX:
+
+MEDIDAS (use [NomeMedida]):
+- [Faturamento Pocket]: valor absoluto R$ do faturamento
+- [Receita Atual]: receita no periodo atual selecionado
+- [Receita Ref]: receita no periodo referencia
+- [Variacao % Receita]: variacao % entre periodos
 - [Volume Atual] / [Volume Ref] / [Variacao % Volume]
-- [Preco Sell IN]: evolucao de preco (Volume Constante)
 - [Preco Sell IN Atual] / [Preco Sell IN Ref] / [Variacao % Preco Sell IN]
-- [Margem]: rentabilidade (Receita - Custo) / Receita
 - [Margem Atual] / [Margem Ref] / [Variacao pp Margem]
 - [Custo Medio Atual] / [Custo Medio Ref] / [Variacao % Custo Medio]
-- [Price Index Atual] / [Price Index Ref] / [Variacao pp Price Index]
-- [Score Final]: score 0-100 por familia
+- [Score Final]: score 0-100 por chave
 - [Qtd Chaves Verdes] / [Qtd Chaves Amarelas] / [Qtd Chaves Vermelhas]
-- [Alerta Chave]: alerta maximo consolidado
-- [Causa T1] / [Causa T2] / [Causa T3]: causas dos problemas
+- [Alerta Chave]: status do alerta
+- [Causa T1] / [Causa T2] / [Causa T3]
 
-DIMENSOES DISPONIVEIS:
-- d_periodo_atual[Ano-Mes Label]: periodo atual (ex: jan/2025, fev/2025, ..., set/2025)
-- d_periodo_ref[Ano-Mes Label]: periodo referencia
-- f_faturamento[Agrupamento Nivel 1]: familia de produtos
-- d_uf[UF]: estado brasileiro
-- d_filial[Filial]: filial/unidade de negocio
-- d_material[Material]: produto especifico
-- d_classificacao[Classificacao]: classificacao do produto
+FILTRO POR PERIODO (IMPORTANTE - use d_calendario):
+- d_calendario[Ano-Mes]: formato "YYYY-MM" (ex: "2025-01", "2025-09")
+- Dados disponiveis: 2025-01 ate 2025-10
+- Para filtrar jan/2025: CALCULATE([medida], d_calendario[Ano-Mes] = "2025-01")
 
-EXEMPLOS DE DAX VALIDO:
+DIMENSOES PARA AGRUPAR:
+- f_faturamento[Agrupamento Nivel 1]: familia de produto
+- d_uf[UF]: estado (ex: "SP", "RJ")
+- d_filial[Filial]: filial
+- d_material[Material]: produto
+
+EXEMPLOS:
 -- Faturamento total jan/2025:
-EVALUATE ROW("fat", CALCULATE([Faturamento Pocket], d_periodo_atual[Ano-Mes Label] = "jan/2025"))
--- Receita por familia:
-EVALUATE SUMMARIZECOLUMNS(f_faturamento[Agrupamento Nivel 1], "receita", [Receita Atual])
--- Top 5 familias por faturamento:
-EVALUATE TOPN(5, SUMMARIZECOLUMNS(f_faturamento[Agrupamento Nivel 1], "fat", [Faturamento Pocket]), [fat], DESC)`;
+EVALUATE ROW("resultado", CALCULATE([Faturamento Pocket], d_calendario[Ano-Mes] = "2025-01"))
 
-    // PASSO 1: Claude gera o DAX baseado na pergunta
+-- Faturamento por familia em jan/2025:
+EVALUATE SUMMARIZECOLUMNS(f_faturamento[Agrupamento Nivel 1], FILTER(ALL(d_calendario), d_calendario[Ano-Mes] = "2025-01"), "fat", [Faturamento Pocket])
+
+-- Top 5 familias por faturamento (periodo atual):
+EVALUATE TOPN(5, SUMMARIZECOLUMNS(f_faturamento[Agrupamento Nivel 1], "fat", [Faturamento Pocket]), [fat], DESC)
+
+-- Faturamento acumulado jan-set/2025:
+EVALUATE ROW("resultado", CALCULATE([Faturamento Pocket], d_calendario[Ano] = 2025))`;
+
+    // PASSO 1: Claude gera DAX
     const userMsg = messages[messages.length - 1].content;
-    const daxPrompt = `Voce e um especialista em DAX do Power BI para o modelo semantico Quartzolit.
-
-${CATALOGO}
-
-${pbiContext ? 'CONTEXTO DO PERIODO ATUAL:\n' + pbiContext : ''}
-
-PERGUNTA DO USUARIO: "${userMsg}"
-
-TAREFA: Gere UMA query DAX para responder essa pergunta.
-- Use EVALUATE como primeira palavra
-- Use CALCULATE() para filtros de periodo
-- Nomes de colunas com acentos exatamente como listados acima
-- Se a pergunta for sobre scores/alertas, use as medidas de Score e Classificacao
-- Se perguntar sobre valor absoluto, use [Faturamento Pocket] ou [Receita Atual]
-- Para filtros de periodo, use: FILTER(ALL(d_periodo_atual), d_periodo_atual[Ano-Mes Label] = "mes/ano")
-- Retorne APENAS a query DAX, sem explicacao, sem markdown, sem backticks`;
-
     const daxResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': KEY, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 300,
-        messages: [{ role: 'user', content: daxPrompt }] })
+        messages: [{ role: 'user', content: CATALOGO + '\n\nPERGUNTA: "' + userMsg + '"\n\nGere UMA query DAX. Retorne APENAS a query, sem explicacao, sem markdown, sem backticks.' }] })
     });
-    const daxData = await daxResp.json();
-    const daxQuery = daxData.content && daxData.content[0] ? daxData.content[0].text.trim() : null;
+    const daxJson = await daxResp.json();
+    const daxQuery = daxJson.content && daxJson.content[0] ? daxJson.content[0].text.trim() : null;
 
-    let resultadoPBI = null;
+    let resultadoPBI = '';
 
-    // PASSO 2: Executa o DAX no Power BI (so se a query for valida)
-    if (daxQuery && daxQuery.toUpperCase().startsWith('EVALUATE') &&
-        !daxQuery.includes('ANTHROPIC') && !daxQuery.includes('http')) {
+    // PASSO 2: Executa DAX no Power BI
+    if (daxQuery && daxQuery.toUpperCase().startsWith('EVALUATE')) {
       try {
         const token = await getToken();
-        const pbiResp = await fetch(pbiBase, {
+        const pbiResp = await fetch(pbiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
           body: JSON.stringify({ queries: [{ query: daxQuery }], serializerSettings: { includeNulls: true } })
         });
-        const pbiData = await pbiResp.json();
-        if (pbiData.results && pbiData.results[0] && pbiData.results[0].tables) {
-          const rows = pbiData.results[0].tables[0].rows || [];
-          resultadoPBI = JSON.stringify(rows).substring(0, 1500);
+        const pbiJson = await pbiResp.json();
+        if (pbiJson.results && pbiJson.results[0] && pbiJson.results[0].tables) {
+          resultadoPBI = JSON.stringify(pbiJson.results[0].tables[0].rows || []).substring(0, 1000);
         } else {
-          resultadoPBI = 'Erro DAX: ' + JSON.stringify(pbiData).substring(0, 300);
+          resultadoPBI = 'Erro: ' + JSON.stringify(pbiJson).substring(0, 200);
         }
-      } catch(e) {
-        resultadoPBI = 'Erro ao executar DAX: ' + e.message;
-      }
+      } catch(e) { resultadoPBI = 'Erro DAX: ' + e.message; }
     }
 
-    // PASSO 3: Claude responde com os dados reais
-    const ctxFinal = (pbiContext || '') +
-      (resultadoPBI ? '\n\nRESULTADO DA QUERY DAX:\n' + resultadoPBI : '');
-
-    const sys = 'Voce e assistente executivo da Quartzolit (Saint-Gobain Brasil).\n'
-      + (ctxFinal ? ctxFinal + '\n' : '')
-      + 'REGRAS: Portugues. Use os dados acima. Seja objetivo. **negrito** para numeros. '
-      + 'Se tiver resultado DAX, interprete os valores (Faturamento Pocket e Receita estao em R$ mil). '
-      + 'Score 0-100: verde=saudavel, vermelho=critico.';
+    // PASSO 3: Claude responde com dados reais
+    const sys = 'Voce e assistente executivo da Quartzolit (Saint-Gobain Brasil). Responda em portugues.'
+      + (pbiContext ? '\n\nCONTEXTO DO DASHBOARD:\n' + pbiContext : '')
+      + (resultadoPBI ? '\n\nDADOS REAIS DO MODELO (resultado da query DAX):\n' + resultadoPBI
+        + '\nOBS: Faturamento Pocket e Receita estao em REAIS (R$). Se o valor for negativo provavelmente ha um problema de contexto de filtro.' : '')
+      + '\n\nREGRAS: Use os dados acima. Seja objetivo. **negrito** para numeros importantes. Se nao tiver dados suficientes, diga claramente.';
 
     const finalResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': KEY, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, system: sys, messages })
     });
-    const finalData = await finalResp.json();
-    return res.status(200).json(finalData);
+    return res.status(200).json(await finalResp.json());
 
   } catch (e) {
     return res.status(500).json({ error: e.message });
@@ -135,4 +113,4 @@ async function getToken() {
   const d = await r.json();
   if (!d.access_token) throw new Error('Token: ' + JSON.stringify(d));
   return d.access_token;
-      }
+    }
