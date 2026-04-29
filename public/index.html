@@ -18,7 +18,7 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
 .bbl.u{background:#000;color:#FFD100;align-self:flex-end;border-radius:12px 12px 3px 12px;font-weight:600}
 .bbl.a{background:#fff;color:#222;align-self:flex-start;border:1px solid #ddd;border-radius:12px 12px 12px 3px}
 .bbl.a b{color:#000}
-.bbl.t{background:#fff;border:1px solid #ddd;align-self:flex-start;padding:8px 13px}
+.bbl.t{background:#fff;border:1px solid #ddd;align-self:flex-start;padding:8px 13px;color:#888;font-size:11px}
 .dots span{display:inline-block;width:6px;height:6px;background:#FFD100;border-radius:50%;animation:bo 1.2s infinite;margin:0 2px}
 .dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
 @keyframes bo{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
@@ -28,7 +28,7 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
 .foot{padding:8px 10px;background:#fff;border-top:2px solid #FFD100;display:flex;gap:7px;align-items:center;flex-shrink:0}
 #editor{flex:1;background:#f5f5f5;border:1.5px solid #ccc;color:#111;padding:9px 13px;border-radius:9px;font-size:13px;outline:none;font-family:inherit;min-height:38px;max-height:80px;overflow-y:auto;cursor:text}
 #editor:focus{border-color:#FFD100;background:#fff}
-#editor:empty:before{content:'Pergunte qualquer coisa sobre os dados...';color:#aaa;pointer-events:none}
+#editor:empty:before{content:'Pergunte sobre qualquer dado do modelo...';color:#aaa;pointer-events:none}
 #btn{background:#FFD100;color:#000;border:none;padding:9px 18px;border-radius:9px;font-size:14px;font-weight:900;cursor:pointer;flex-shrink:0}
 #btn:disabled{opacity:.35}
 </style>
@@ -41,93 +41,96 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
 </div>
 <script>
 var p = new URLSearchParams(window.location.search);
-var atual = p.get('atual') || '';
-var ref   = p.get('ref')   || '';
-var uf    = p.get('uf')    || 'Todos';
-var vd    = p.get('vd')    || '0';
-var va    = p.get('va')    || '0';
-var vv    = p.get('vv')    || '0';
-var rec   = p.get('rec')   || '0';
-var vol   = p.get('vol')   || '0';
-var mar   = p.get('mar')   || '0';
-var pre   = p.get('pre')   || '0';
-var al    = p.get('al')    || '';
-
+var atual = p.get('atual')||''; var ref=p.get('ref')||''; var uf=p.get('uf')||'Todos';
+var vd=p.get('vd')||'0'; var va=p.get('va')||'0'; var vv=p.get('vv')||'0';
+var rec=p.get('rec')||'0'; var vol=p.get('vol')||'0'; var mar=p.get('mar')||'0'; var pre=p.get('pre')||'0';
+var al=p.get('al')||'';
 var temDados = atual !== '' && atual !== 'null';
 
-// Decodifica alertas
 var alertasCtx = '';
-if (al) {
-  al.split('~').forEach(function(item) {
-    var pt = item.split('|');
-    if (pt[0]) {
-      alertasCtx += '\n- ' + pt[0] + ': ' + (pt[1]||'');
-      if (pt[2]) alertasCtx += ' | Preco: ' + pt[2];
-      if (pt[3]) alertasCtx += ' | Volume: ' + pt[3];
-      if (pt[4]) alertasCtx += ' | Rentab: ' + pt[4];
-    }
-  });
-}
+if(al){ al.split('~').forEach(function(item){ var pt=item.split('|'); if(pt[0]){ alertasCtx+='\n- '+pt[0]+': '+(pt[1]||''); if(pt[2])alertasCtx+=' | Preco: '+pt[2]; if(pt[3])alertasCtx+=' | Volume: '+pt[3]; if(pt[4])alertasCtx+=' | Rentab: '+pt[4]; }}); }
 
-// Contexto passado ao Claude - periodo e apenas filtro do slicer, nao limite dos dados
-var pbiCtx = temDados
-  ? 'FILTRO ATUAL DO DASHBOARD (slicer selecionado):\n'
-    + 'Periodo: ' + atual + ' vs ' + ref + ' | UF: ' + uf + '\n'
-    + 'Score no periodo: ' + vd + ' verdes, ' + va + ' amarelas, ' + vv + ' vermelhas\n'
-    + 'Variacoes no periodo: Receita=' + rec + '% | Volume=' + vol + '% | Margem=' + mar + 'pp | Preco=' + pre + '%'
-    + (alertasCtx ? '\nFamilias com alertas:' + alertasCtx : '')
-  : null;
+var pbiSlicerCtx = temDados
+  ? 'FILTRO ATUAL DO DASHBOARD (slicer):\n'
+    + 'Periodo: '+atual+' vs '+ref+' | UF: '+uf+'\n'
+    + 'Score: '+vd+' verdes, '+va+' amarelas, '+vv+' vermelhas\n'
+    + 'Variacoes: Receita='+rec+'% | Volume='+vol+'% | Margem='+mar+'pp | Preco='+pre+'%'
+    + (alertasCtx ? '\nFamilias com alertas:'+alertasCtx : '')
+  : '';
 
-// Header - mostra periodo selecionado
-if (temDados) {
-  document.getElementById('hdrInfo').textContent = 'Slicer: ' + atual + ' vs ' + ref;
-}
+if(temDados) document.getElementById('hdrInfo').textContent = 'Slicer: '+atual+' vs '+ref;
 
 var suggs = '<div class="suggs">'
-  + '<span class="sg" id="s1">Familias criticas?</span>'
-  + '<span class="sg" id="s2">Faturamento por mes em 2025?</span>'
-  + '<span class="sg" id="s3">Acao recomendada?</span>'
-  + '<span class="sg" id="s4">Resumo do cenario atual</span>'
-  + '</div>';
+  +'<span class="sg" id="s1">Familias criticas no periodo atual?</span>'
+  +'<span class="sg" id="s2">Faturamento por mes em 2025?</span>'
+  +'<span class="sg" id="s3">Top 5 familias por receita?</span>'
+  +'<span class="sg" id="s4">Resumo do cenario atual</span>'
+  +'</div>';
 
 var mi = document.getElementById('msgInicial');
 mi.innerHTML = 'Ola! Sou a IA da Quartzolit com acesso ao modelo semantico completo.<br><br>'
-  + 'Posso responder sobre <b>qualquer periodo disponivel no modelo</b> (desde jan/2025):<br>'
-  + 'receita, volume, margem, preco, faturamento por mes/familia/UF/filial, alertas, scores e muito mais.'
-  + (temDados ? '<br><br>Slicer atual: <b>' + atual + ' vs ' + ref + '</b> | '
-    + '<b style="color:#c00">' + vv + ' vermelhas</b>, <b>' + va + ' amarelas</b>, <b style="color:#4a0">' + vd + ' verdes</b>' : '')
-  + suggs;
+  +'Posso responder sobre <b>qualquer periodo disponivel</b> (dados desde jan/2025): '
+  +'receita, faturamento, volume, margem, preco, por mes/familia/UF/filial.'
+  +(temDados ? '<br><br>Slicer atual: <b>'+atual+' vs '+ref+'</b> | '
+    +'<b style="color:#c00">'+vv+' vermelhas</b>, <b>'+va+' amarelas</b>, <b style="color:#4a0">'+vd+' verdes</b>' : '')
+  +suggs;
 
-['s1','s2','s3','s4'].forEach(function(id) {
-  var el = document.getElementById(id);
-  if (el) el.addEventListener('click', function() { ed.textContent = this.textContent; go(); });
+['s1','s2','s3','s4'].forEach(function(id){
+  var el=document.getElementById(id);
+  if(el) el.addEventListener('click',function(){ ed.textContent=this.textContent; go(); });
 });
 
-var H = [];
-var M = document.getElementById('msgs');
-var ed = document.getElementById('editor');
-var btn = document.getElementById('btn');
+var H=[]; var M=document.getElementById('msgs'); var ed=document.getElementById('editor'); var btn=document.getElementById('btn');
+function sb(){M.scrollTop=M.scrollHeight;}
+function boldify(t){var parts=t.split('**');var r='';for(var i=0;i<parts.length;i++)r+=i%2===0?parts[i]:'<b>'+parts[i]+'</b>';return r.split('\n').join('<br>');}
+function am(t,c){var d=document.createElement('div');d.className='bbl '+c;d.innerHTML=boldify(t);M.appendChild(d);sb();}
+function st(msg){var d=document.createElement('div');d.className='bbl t';d.id='tp';d.innerHTML=msg||"<div class='dots'><span></span><span></span><span></span></div>";M.appendChild(d);sb();}
+function rt(){var t=document.getElementById('tp');if(t)t.remove();}
+function ut(msg){var t=document.getElementById('tp');if(t)t.innerHTML=msg;}
 
-function sb() { M.scrollTop = M.scrollHeight; }
-function boldify(t) {
-  var parts = t.split('**');
-  var r = '';
-  for (var i=0; i<parts.length; i++) r += i%2===0 ? parts[i] : '<b>'+parts[i]+'</b>';
-  return r.split('\n').join('<br>');
-}
-function am(t,c){ var d=document.createElement('div'); d.className='bbl '+c; d.innerHTML=boldify(t); M.appendChild(d); sb(); }
-function st(){ var d=document.createElement('div'); d.className='bbl t'; d.id='tp'; d.innerHTML="<div class='dots'><span></span><span></span><span></span></div>"; M.appendChild(d); sb(); }
-function rt(){ var t=document.getElementById('tp'); if(t)t.remove(); }
-
-function go() {
+function go(){
   var t=(ed.textContent||ed.innerText||'').trim();
   if(!t)return;
   ed.textContent=''; btn.disabled=true;
-  am(t,'u'); H.push({role:'user',content:t}); st();
-  fetch('/api/chat',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({messages:H, pbiContext:pbiCtx})
+  am(t,'u'); H.push({role:'user',content:t});
+
+  // Detecta se precisa consultar modelo
+  var needsQuery=/faturamento|receita|volume|margem|custo|preco|sell.?in|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez|janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|2024|2025|2026|mes|ano|total|quanto|historico|familia|categoria|filial|estado|uf|top|maior|menor/i.test(t);
+
+  if(needsQuery){
+    // ETAPA 1: consulta modelo (pode demorar - sem limite no browser)
+    st('Consultando modelo semantico Power BI... (pode levar alguns segundos)');
+    fetch('/api/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:t})})
+    .then(function(r){return r.json();})
+    .then(function(qd){
+      var queryCtx = '';
+      if(qd.result&&qd.result.results&&qd.result.results[0]&&qd.result.results[0].tables){
+        var rows=qd.result.results[0].tables[0].rows||[];
+        if(rows.length>0){
+          queryCtx='RESULTADO DA CONSULTA DAX AO MODELO:\nQuery: '+(qd.dax||'').substring(0,200)+'\nDados: '+JSON.stringify(rows).substring(0,2000);
+        }
+      } else if(qd.error){
+        queryCtx='Erro na consulta: '+qd.error;
+      }
+      // ETAPA 2: Claude interpreta
+      ut('Interpretando dados...');
+      var fullCtx = (pbiSlicerCtx?pbiSlicerCtx+'\n\n':'')+queryCtx;
+      callClaude(t, fullCtx);
+    })
+    .catch(function(e){
+      ut('Erro ao consultar modelo: '+e.message+'. Respondendo com dados do slicer...');
+      setTimeout(function(){ callClaude(t, pbiSlicerCtx); }, 500);
+    });
+  } else {
+    // Sem query - resposta rapida com dados do slicer
+    st();
+    callClaude(t, pbiSlicerCtx);
+  }
+}
+
+function callClaude(pergunta, ctx){
+  fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({messages:H,pbiContext:ctx})
   }).then(function(r){return r.json();}).then(function(d){
     rt();
     if(d.content&&d.content[0]){var rep=d.content[0].text;H.push({role:'assistant',content:rep});am(rep,'a');}
