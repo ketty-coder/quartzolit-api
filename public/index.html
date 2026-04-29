@@ -40,35 +40,22 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
   <div class="foot"><div id="editor" contenteditable="true"></div><button id="btn">&#9658;</button></div>
 </div>
 <script>
-var SCHEMA = `MODELO SEMANTICO QUARTZOLIT (Saint-Gobain Brasil) - dados desde jan/2025:
-TABELAS: f_faturamento (Date, Agrupamento Nivel 1=familia, UF, Quantidade, Faturamento Pocket R$), f_custos, d_material, d_filial, d_uf, d_calendario (Date, Ano, Mes, Ano-Mes Label ex: "jan/2025")
-MEDIDAS: [Faturamento Pocket]=faturamento liquido R$, [Receita], [Volume], [Preco Sell IN], [Margem]
-EXEMPLOS DAX:
-- Faturamento por mes: EVALUATE SUMMARIZECOLUMNS(d_calendario[Ano-Mes Label], "Fat", [Faturamento Pocket])
-- Faturamento total: EVALUATE ROW("Total", [Faturamento Pocket])
-- Por familia: EVALUATE SUMMARIZECOLUMNS(f_faturamento[Agrupamento Nivel 1], "Fat", [Faturamento Pocket])
-- Filtrar mes: EVALUATE CALCULATETABLE(ROW("Fat",[Faturamento Pocket]), d_calendario[Ano-Mes Label]="jan/2025")`;
-
-// Parametros da URL passados pela medida Chat IA do Power BI
 var p = new URLSearchParams(window.location.search);
-var atual = p.get('atual')||''; var ref=p.get('ref')||''; var uf=p.get('uf')||'Todos';
+var atual=p.get('atual')||''; var ref=p.get('ref')||''; var uf=p.get('uf')||'Todos';
 var vd=p.get('vd')||'0'; var va=p.get('va')||'0'; var vv=p.get('vv')||'0';
 var rec=p.get('rec')||'0'; var vol=p.get('vol')||'0'; var mar=p.get('mar')||'0'; var pre=p.get('pre')||'0';
 var al=p.get('al')||'';
-var temFiltro = atual !== '' && atual !== 'null';
 
-// Contexto do slicer (apenas para perguntas sobre o periodo atual)
-var alertasCtx = '';
+var alertasCtx='';
 if(al){ al.split('~').forEach(function(item){ var pt=item.split('|'); if(pt[0]){ alertasCtx+='\n- '+pt[0]+': '+(pt[1]||''); if(pt[2])alertasCtx+=' | '+pt[2]; if(pt[3])alertasCtx+=' | '+pt[3]; if(pt[4])alertasCtx+=' | '+pt[4]; }}); }
 
-var slicerCtx = temFiltro
-  ? 'SLICER SELECIONADO NO DASHBOARD (periodo atual): '+atual+' vs '+ref+' | UF: '+uf+'\n'
+var slicerCtx = atual
+  ? 'SLICER ATUAL DO DASHBOARD: '+atual+' vs '+ref+' | UF: '+uf+'\n'
     +'Score: '+vd+' verdes, '+va+' amarelas, '+vv+' vermelhas\n'
     +'Variacoes: Rec='+rec+'% Vol='+vol+'% Mar='+mar+'pp Pre='+pre+'%'
     +(alertasCtx ? '\nAlertas:'+alertasCtx : '')
   : '';
 
-// Mensagem inicial - sem mencionar periodo como restricao
 var suggs = '<div class="suggs">'
   +'<span class="sg" id="s1">Score e alertas do periodo atual</span>'
   +'<span class="sg" id="s2">Faturamento por mes em 2025</span>'
@@ -76,11 +63,11 @@ var suggs = '<div class="suggs">'
   +'<span class="sg" id="s4">Resumo executivo</span>'
   +'</div>';
 
+// Mensagem inicial IGUAL ao site - sem mostrar scores/periodo
 var mi = document.getElementById('msgInicial');
 mi.innerHTML = 'Ola! Sou a IA da Quartzolit com acesso ao modelo semantico Power BI.<br><br>'
   +'Posso responder sobre <b>qualquer dado disponivel no modelo</b>: '
   +'receita, faturamento, volume, margem, preco, por mes, familia, UF, filial.'
-  +(temFiltro ? '<br><br>Dashboard: <b style="color:#c00">'+vv+' vermelhas</b>, '+va+' amarelas, <b style="color:#4a0">'+vd+' verdes</b>' : '')
   +suggs;
 
 ['s1','s2','s3','s4'].forEach(function(id){
@@ -96,7 +83,6 @@ function st(msg){var d=document.createElement('div');d.className='bbl t';d.id='t
 function rt(){var t=document.getElementById('tp');if(t)t.remove();}
 function ut(msg){var t=document.getElementById('tp');if(t)t.innerHTML=msg;}
 
-// Detecta se precisa consultar modelo semantico
 function precisaQuery(txt){
   return /faturamento|receita|volume|margem|custo|preco|sell.?in|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez|janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|2024|2025|2026|mes|ano|total|quanto|historico|familia|categoria|filial|estado|uf|top|maior|menor|rank|evolucao|crescimento|queda/i.test(txt);
 }
@@ -108,55 +94,35 @@ function go(){
   am(t,'u'); H.push({role:'user',content:t});
 
   if(precisaQuery(t)){
-    // ETAPA 1: Claude gera o DAX
     st('Gerando consulta ao modelo...');
     fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        action:'gerar_dax',
-        question:t,
-        schema:SCHEMA
-      })
+      body:JSON.stringify({action:'gerar_dax',question:t})
     }).then(function(r){return r.json();}).then(function(d){
-      var daxQuery = d.dax || '';
-      if(!daxQuery){
-        // Sem DAX gerado, responde direto com Claude
-        ut("Interpretando...");
-        return callClaude(t, slicerCtx, null);
-      }
-      // ETAPA 2: Executa o DAX no modelo
+      var daxQuery=d.dax||'';
+      if(!daxQuery){ ut('Interpretando...'); return callClaude(t,slicerCtx); }
       ut('Consultando modelo semantico Power BI...');
       return fetch('/api/query',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({dax:daxQuery})
       }).then(function(r2){return r2.json();}).then(function(qd){
-        // ETAPA 3: Claude interpreta os dados
         ut('Interpretando dados...');
-        var queryCtx = '';
+        var queryCtx='';
         if(qd.results&&qd.results[0]&&qd.results[0].tables){
           var rows=qd.results[0].tables[0].rows||[];
-          if(rows.length>0){
-            queryCtx='DADOS REAIS DO MODELO (DAX executado):\n'+JSON.stringify(rows).substring(0,2000);
-          } else {
-            queryCtx='Consulta retornou 0 linhas. DAX: '+daxQuery;
-          }
-        } else if(qd.error){
-          queryCtx='Erro na consulta: '+JSON.stringify(qd.error);
-        }
-        callClaude(t, (slicerCtx?slicerCtx+'\n\n':'')+queryCtx, H);
+          if(rows.length>0) queryCtx='DADOS REAIS DO MODELO:\n'+JSON.stringify(rows).substring(0,2000);
+          else queryCtx='Consulta retornou 0 linhas.';
+        } else if(qd.error){ queryCtx='Erro: '+JSON.stringify(qd.error); }
+        callClaude(t,(slicerCtx?slicerCtx+'\n\n':'')+queryCtx);
       });
-    }).catch(function(e){
-      ut('Erro: '+e.message);
-      setTimeout(function(){callClaude(t,slicerCtx,H);},500);
-    });
+    }).catch(function(e){ ut('Erro: '+e.message); setTimeout(function(){callClaude(t,slicerCtx);},500); });
   } else {
-    // Resposta direta - sem precisar consultar
     st();
-    callClaude(t, slicerCtx, H);
+    callClaude(t,slicerCtx);
   }
 }
 
-function callClaude(pergunta, ctx, msgs){
+function callClaude(pergunta,ctx){
   fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({messages:msgs||H, pbiContext:ctx})
+    body:JSON.stringify({messages:H,pbiContext:ctx})
   }).then(function(r){return r.json();}).then(function(d){
     rt();
     if(d.content&&d.content[0]){var rep=d.content[0].text;H.push({role:'assistant',content:rep});am(rep,'a');}
