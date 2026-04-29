@@ -1,37 +1,46 @@
 const SCHEMA = `MODELO SEMANTICO QUARTZOLIT - dados desde jan/2025.
 
-COLUNAS EXATAS d_calendario (COPIAR EXATAMENTE):
-- d_calendario[Ano] - inteiro ex: 2025
-- d_calendario[Ano-M\u00EAs] - string ex: "2025-01", "2025-09"
-- d_calendario[M\u00EAs N\u00FAmero] - inteiro 1=jan, 12=dez
-- d_calendario[M\u00EAs Nome] - string ex: "Janeiro"
-- d_calendario[M\u00EAs Abrev] - string ex: "jan"
-- d_calendario[Trimestre] - string ex: "T1"
-- d_calendario[Date] - data
+COLUNAS EXATAS d_calendario:
+- d_calendario[Ano] INTEGER ex: 2025
+- d_calendario[Mes Numero] INTEGER 1=jan...12=dez
+- d_calendario[Mes Nome] STRING ex: "Janeiro"
+- d_calendario[Ano-Mes] STRING ex: "2025-01"
 
 COLUNAS f_faturamento:
-- f_faturamento[Agrupamento N\u00EDvel 1] - familia
-- f_faturamento[UF] - estado
+- f_faturamento[Agrupamento Nivel 1] STRING - familia de produto
 
-MEDIDAS: [Faturamento Pocket], [Receita], [Volume], [Margem], [Pre\u00E7o Sell IN]
+DIMENSOES PARA FILTRAR:
+- d_uf[UF] STRING - estado ex: "SP", "RJ", "MG" (sigla 2 letras MAIUSCULAS)
+- d_filial[Filial] STRING - nome da filial
 
-EXEMPLOS DAX CORRETOS (use estes como referencia):
+MEDIDAS: [Faturamento Pocket], [Receita], [Volume], [Margem], [Preco Sell IN]
+
+EXEMPLOS DAX CORRETOS:
 Q: faturamento por mes em 2025
-A: EVALUATE CALCULATETABLE(SUMMARIZECOLUMNS(d_calendario[Ano-M\u00EAs],d_calendario[M\u00EAs Nome],"Fat",[Faturamento Pocket]),FILTER(ALL(d_calendario),d_calendario[Ano]=2025))
+A: EVALUATE CALCULATETABLE(SUMMARIZECOLUMNS(d_calendario[Ano-Mes],d_calendario[Mes Nome],"Fat",[Faturamento Pocket]),FILTER(ALL(d_calendario),d_calendario[Ano]=2025))
+
+Q: faturamento em sao paulo
+A: EVALUATE CALCULATETABLE(ROW("Fat",[Faturamento Pocket]),d_uf[UF]="SP")
+
+Q: faturamento SP por mes em 2025
+A: EVALUATE CALCULATETABLE(SUMMARIZECOLUMNS(d_calendario[Ano-Mes],d_calendario[Mes Nome],"Fat",[Faturamento Pocket]),d_uf[UF]="SP",FILTER(ALL(d_calendario),d_calendario[Ano]=2025))
 
 Q: faturamento total em janeiro 2025
-A: EVALUATE CALCULATETABLE(ROW("Fat",[Faturamento Pocket]),d_calendario[Ano]=2025,d_calendario[M\u00EAs N\u00FAmero]=1)
+A: EVALUATE CALCULATETABLE(ROW("Fat",[Faturamento Pocket]),d_calendario[Ano]=2025,d_calendario[Mes Numero]=1)
 
 Q: top 5 familias por faturamento
-A: EVALUATE TOPN(5,SUMMARIZECOLUMNS(f_faturamento[Agrupamento N\u00EDvel 1],"Fat",[Faturamento Pocket]),[Fat],DESC)
+A: EVALUATE TOPN(5,SUMMARIZECOLUMNS(f_faturamento[Agrupamento Nivel 1],"Fat",[Faturamento Pocket]),[Fat],DESC)
 
 Q: faturamento total 2025
 A: EVALUATE CALCULATETABLE(ROW("Fat",[Faturamento Pocket]),FILTER(ALL(d_calendario),d_calendario[Ano]=2025))
 
 Q: faturamento por UF
-A: EVALUATE SUMMARIZECOLUMNS(f_faturamento[UF],"Fat",[Faturamento Pocket])
+A: EVALUATE SUMMARIZECOLUMNS(d_uf[UF],"Fat",[Faturamento Pocket])
 
-REGRAS: EVALUATE obrigatorio. Para filtrar use d_calendario[Ano]=2025 (inteiro). Para agrupar por mes use d_calendario[Ano-M\u00EAs]. SUMMARIZECOLUMNS nao aceita filtros inline - use CALCULATETABLE ao redor.`;
+Q: receita por familia em SP
+A: EVALUATE CALCULATETABLE(SUMMARIZECOLUMNS(f_faturamento[Agrupamento Nivel 1],"Rec",[Receita]),d_uf[UF]="SP")
+
+REGRAS: EVALUATE obrigatorio. Para filtrar UF use d_uf[UF]="XX" (sigla maiuscula). Para filtrar ano use d_calendario[Ano]=2025 (inteiro). SUMMARIZECOLUMNS nao aceita filtros inline - use CALCULATETABLE ao redor.`;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -52,7 +61,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 300,
-          system: SCHEMA + '\n\nRetorne SOMENTE o DAX puro. Sem explicacoes. Sem markdown. Sem backticks.',
+          system: SCHEMA + '\n\nIMPORTANTE: Para estados brasileiros como "Sao Paulo", "Minas Gerais", etc, converta para a sigla: SP, MG, RJ, RS, PR, SC, BA, GO, DF, ES, PE, CE, PA, MT, MS, MA, PB, RN, AL, PI, SE, AM, RO, AC, AP, RR, TO. Retorne SOMENTE o DAX puro sem espacos extras, sem markdown, sem backticks.',
           messages: [{ role: 'user', content: question }]
         })
       });
@@ -83,4 +92,4 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
-}
+  }
