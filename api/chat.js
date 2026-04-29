@@ -1,50 +1,37 @@
-const SCHEMA = `MODELO SEMANTICO QUARTZOLIT (Saint-Gobain Brasil) - dados desde jan/2025.
+const SCHEMA = `MODELO SEMANTICO QUARTZOLIT - dados jan/2025 em diante.
 
-COLUNAS d_calendario (tabela de datas):
-- d_calendario[Date] - data completa
-- d_calendario[Ano] - ano inteiro ex: 2025
-- d_calendario[Mes Numero] - mes inteiro 1-12
-- d_calendario[Mes Nome] - nome do mes ex: "Janeiro"
-- d_calendario[Mes Abrev] - abreviacao ex: "jan"
-- d_calendario[Ano-Mes] - string ex: "2025-01", "2025-09"
-- d_calendario[Trimestre] - ex: "T1", "T2"
+COLUNAS d_calendario:
+- d_calendario[Ano] INTEGER ex: 2025
+- d_calendario[Mes Numero] INTEGER 1=jan, 2=fev... 12=dez
+- d_calendario[Mes Nome] STRING ex: "Janeiro"
+- d_calendario[Mes Abrev] STRING ex: "jan"
+- d_calendario[Ano-Mes] STRING ex: "2025-01"
 
-COLUNAS f_faturamento (tabela fato):
-- f_faturamento[Agrupamento Nivel 1] - familia de produto
-- f_faturamento[Agrupamento Nivel 2] - categoria
-- f_faturamento[UF] - estado
-- f_faturamento[Cod Filial]
+COLUNAS f_faturamento:
+- f_faturamento[Agrupamento Nivel 1] STRING - familia
+- f_faturamento[UF] STRING
 
-MEDIDAS (use entre colchetes):
-- [Faturamento Pocket] - faturamento liquido total R$
-- [Receita] - receita ajustada
-- [Volume] - volume de vendas
-- [Preco Sell IN] - preco medio
-- [Margem] - margem percentual
-- [Custo Medio] - custo medio
+MEDIDAS: [Faturamento Pocket], [Receita], [Volume], [Margem], [Preco Sell IN]
 
-EXEMPLOS DAX CORRETOS:
-- Faturamento por mes:
-  EVALUATE SUMMARIZECOLUMNS(d_calendario[Ano-Mes], d_calendario[Mes Nome], "Faturamento", [Faturamento Pocket])
+REGRAS DAX CRITICAS:
+1. SEMPRE use EVALUATE
+2. Para filtrar por ano: use FILTER(ALL(d_calendario), d_calendario[Ano]=2025) dentro de CALCULATETABLE
+3. Para filtrar por mes: d_calendario[Mes Numero]=1 (janeiro)
+4. SUMMARIZECOLUMNS aceita apenas: coluna, coluna, "nome", medida - NAO aceita filtros inline
+5. Para filtrar em SUMMARIZECOLUMNS, use CALCULATETABLE ao redor
 
-- Faturamento total 2025:
-  EVALUATE CALCULATETABLE(ROW("Faturamento Total", [Faturamento Pocket]), d_calendario[Ano]=2025)
+EXEMPLOS CORRETOS:
+Pergunta: "faturamento por mes em 2025"
+DAX: EVALUATE CALCULATETABLE(SUMMARIZECOLUMNS(d_calendario[Ano-Mes],d_calendario[Mes Nome],"Fat",[Faturamento Pocket]),FILTER(ALL(d_calendario),d_calendario[Ano]=2025))
 
-- Faturamento jan/2025:
-  EVALUATE CALCULATETABLE(ROW("Faturamento", [Faturamento Pocket]), d_calendario[Ano]=2025, d_calendario[Mes Numero]=1)
+Pergunta: "faturamento total de janeiro 2025"
+DAX: EVALUATE CALCULATETABLE(ROW("Fat",[Faturamento Pocket]),d_calendario[Ano]=2025,d_calendario[Mes Numero]=1)
 
-- Por familia:
-  EVALUATE SUMMARIZECOLUMNS(f_faturamento[Agrupamento Nivel 1], "Faturamento", [Faturamento Pocket], "Receita", [Receita])
+Pergunta: "top 5 familias por faturamento"
+DAX: EVALUATE TOPN(5,SUMMARIZECOLUMNS(f_faturamento[Agrupamento Nivel 1],"Fat",[Faturamento Pocket]),[Fat],DESC)
 
-- Top 5 familias:
-  EVALUATE TOPN(5, SUMMARIZECOLUMNS(f_faturamento[Agrupamento Nivel 1], "Fat", [Faturamento Pocket]), [Fat], DESC)
-
-REGRAS DAX:
-1. Sempre comece com EVALUATE
-2. Use d_calendario[Ano] (inteiro) para filtrar ano, nao string
-3. Use d_calendario[Mes Numero] (inteiro 1-12) para filtrar mes
-4. Para agrupar por mes use d_calendario[Ano-Mes] que tem formato "2025-01"
-5. NUNCA use colunas que nao existem acima`;
+Pergunta: "faturamento total 2025"
+DAX: EVALUATE CALCULATETABLE(ROW("Fat",[Faturamento Pocket]),FILTER(ALL(d_calendario),d_calendario[Ano]=2025))`;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -56,7 +43,6 @@ export default async function handler(req, res) {
   try {
     const { messages, pbiContext, action, question } = req.body;
 
-    // MODO 1: Gerar DAX
     if (action === 'gerar_dax') {
       if (!question) return res.status(400).json({ error: 'question required' });
       const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -65,8 +51,8 @@ export default async function handler(req, res) {
           'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 400,
-          system: 'Voce e especialista em DAX Power BI. Use o schema abaixo para gerar DAX correto.\n' + SCHEMA + '\nRetorne APENAS o DAX puro, sem explicacoes, sem markdown, sem backticks.',
+          max_tokens: 300,
+          system: SCHEMA + '\n\nRetorne SOMENTE o DAX puro sem espacos extras, sem markdown, sem backticks, sem explicacao.',
           messages: [{ role: 'user', content: question }]
         })
       });
@@ -75,17 +61,15 @@ export default async function handler(req, res) {
       return res.status(200).json({ dax });
     }
 
-    // MODO 2: Responder ao usuario
     if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: 'messages required' });
 
     const ctx = pbiContext || '';
-    const sys = 'Voce e assistente executivo da Quartzolit (Saint-Gobain Brasil).\n'
-      + 'Tem acesso ao modelo semantico Power BI com dados desde jan/2025.\n'
+    const sys = 'Voce e assistente executivo da Quartzolit (Saint-Gobain Brasil). '
+      + 'Acesso ao modelo semantico Power BI com dados desde jan/2025. '
       + (ctx ? ctx + '\n\n' : '')
-      + 'REGRAS: 1) Portugues. 2) Slicer do dashboard = selecao atual, nao restricao de dados. '
-      + '3) Se recebeu DADOS REAIS, use exatamente esses numeros. '
-      + '4) NUNCA diga que nao tem dados sem ter consultado. '
-      + '5) **negrito** para numeros. R$ para valores, % para percentuais.';
+      + 'REGRAS: Portugues. Slicer = selecao atual nao restricao. '
+      + 'Se recebeu DADOS REAIS use exatamente. NUNCA diga que nao tem dados. '
+      + '**negrito** para numeros. R$ para valores. % para percentuais.';
 
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -99,4 +83,4 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
-                                                                            }
+          }
