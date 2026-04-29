@@ -40,7 +40,7 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
   <div class="foot"><div id="editor" contenteditable="true"></div><button id="btn">&#9658;</button></div>
 </div>
 <script>
-// Le parametros passados pelo Power BI via iframe URL
+// Le todos os parametros passados pelo Power BI via iframe URL
 var p = new URLSearchParams(window.location.search);
 var atual = p.get('atual') || '';
 var ref   = p.get('ref')   || '';
@@ -52,15 +52,37 @@ var rec   = p.get('rec')   || '0';
 var vol   = p.get('vol')   || '0';
 var mar   = p.get('mar')   || '0';
 var pre   = p.get('pre')   || '0';
+var al    = p.get('al')    || '';  // FAM|ALERTA|C1|C2|C3~FAM2|...
 
 var temDados = atual !== '' && atual !== 'null' && atual !== 'undefined';
 
-// Monta contexto com dados do Power BI (calculados pelo Desktop, zero latencia)
+// Decodifica alertas: "FAM|ALERTA|C1|C2|C3~FAM2|..."
+var alertasCtx = '';
+if (al) {
+  var itens = al.split('~');
+  itens.forEach(function(item) {
+    var partes = item.split('|');
+    var fam = partes[0] || '';
+    var alerta = partes[1] || '';
+    var c1 = partes[2] || '';
+    var c2 = partes[3] || '';
+    var c3 = partes[4] || '';
+    if (fam) {
+      alertasCtx += '\n- ' + fam + ': ' + alerta;
+      if (c1) alertasCtx += ' | Preco: ' + c1;
+      if (c2) alertasCtx += ' | Volume: ' + c2;
+      if (c3) alertasCtx += ' | Rentab: ' + c3;
+    }
+  });
+}
+
+// Monta contexto completo com todos os dados do Power BI
 var pbiCtx = temDados
   ? 'DADOS DO MODELO POWER BI (TEMPO REAL):\n'
     + 'Periodo Atual: ' + atual + ' | Referencia: ' + ref + ' | UF: ' + uf + '\n'
     + 'Variacoes: Receita=' + rec + '% | Volume=' + vol + '% | Margem=' + mar + 'pp | Preco=' + pre + '%\n'
-    + 'Score: ' + vd + ' verdes, ' + va + ' amarelas, ' + vv + ' vermelhas (criticas)'
+    + 'Score: ' + vd + ' verdes (saudaveis), ' + va + ' amarelas (atencao), ' + vv + ' vermelhas (criticas)'
+    + (alertasCtx ? '\n\nFAMILIAS COM ALERTAS ATIVOS:' + alertasCtx : '')
   : null;
 
 // Atualiza header
@@ -81,8 +103,9 @@ if (temDados) {
   mi.innerHTML = 'Ola! IA da Quartzolit com dados do modelo em tempo real.<br><br>'
     + 'Periodo: <b>' + atual + ' vs ' + ref + '</b> | UF: <b>' + uf + '</b><br>'
     + 'Score: <b style="color:#c00">' + vv + ' vermelhas</b>, <b>' + va + ' amarelas</b>, <b style="color:#4a0">' + vd + ' verdes</b><br>'
-    + 'Variacoes: Receita <b>' + rec + '%</b> | Volume <b>' + vol + '%</b> | Margem <b>' + mar + 'pp</b> | Preco <b>' + pre + '%</b><br><br>'
-    + 'Pergunte sobre <b>scores, alertas, variacoes e ponto de ataque</b>!' + suggs;
+    + 'Variacoes: Receita <b>' + rec + '%</b> | Volume <b>' + vol + '%</b> | Margem <b>' + mar + 'pp</b> | Preco <b>' + pre + '%</b>'
+    + (alertasCtx ? '<br>Familias com alertas: <b>' + al.split('~').length + '</b>' : '')
+    + '<br><br>Pergunte sobre <b>scores, alertas, variacoes e ponto de ataque</b>!' + suggs;
 } else {
   mi.innerHTML = 'Ola! Sou a IA da Quartzolit.<br><br>'
     + 'Pergunte sobre <b>scores, alertas e variacoes</b>!' + suggs;
