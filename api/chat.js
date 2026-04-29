@@ -1,37 +1,37 @@
-const SCHEMA = `MODELO SEMANTICO QUARTZOLIT - dados jan/2025 em diante.
+const SCHEMA = `MODELO SEMANTICO QUARTZOLIT - dados desde jan/2025.
 
-COLUNAS d_calendario:
-- d_calendario[Ano] INTEGER ex: 2025
-- d_calendario[Mes Numero] INTEGER 1=jan, 2=fev... 12=dez
-- d_calendario[Mes Nome] STRING ex: "Janeiro"
-- d_calendario[Mes Abrev] STRING ex: "jan"
-- d_calendario[Ano-Mes] STRING ex: "2025-01"
+COLUNAS EXATAS d_calendario (COPIAR EXATAMENTE):
+- d_calendario[Ano] - inteiro ex: 2025
+- d_calendario[Ano-M\u00EAs] - string ex: "2025-01", "2025-09"
+- d_calendario[M\u00EAs N\u00FAmero] - inteiro 1=jan, 12=dez
+- d_calendario[M\u00EAs Nome] - string ex: "Janeiro"
+- d_calendario[M\u00EAs Abrev] - string ex: "jan"
+- d_calendario[Trimestre] - string ex: "T1"
+- d_calendario[Date] - data
 
 COLUNAS f_faturamento:
-- f_faturamento[Agrupamento Nivel 1] STRING - familia
-- f_faturamento[UF] STRING
+- f_faturamento[Agrupamento N\u00EDvel 1] - familia
+- f_faturamento[UF] - estado
 
-MEDIDAS: [Faturamento Pocket], [Receita], [Volume], [Margem], [Preco Sell IN]
+MEDIDAS: [Faturamento Pocket], [Receita], [Volume], [Margem], [Pre\u00E7o Sell IN]
 
-REGRAS DAX CRITICAS:
-1. SEMPRE use EVALUATE
-2. Para filtrar por ano: use FILTER(ALL(d_calendario), d_calendario[Ano]=2025) dentro de CALCULATETABLE
-3. Para filtrar por mes: d_calendario[Mes Numero]=1 (janeiro)
-4. SUMMARIZECOLUMNS aceita apenas: coluna, coluna, "nome", medida - NAO aceita filtros inline
-5. Para filtrar em SUMMARIZECOLUMNS, use CALCULATETABLE ao redor
+EXEMPLOS DAX CORRETOS (use estes como referencia):
+Q: faturamento por mes em 2025
+A: EVALUATE CALCULATETABLE(SUMMARIZECOLUMNS(d_calendario[Ano-M\u00EAs],d_calendario[M\u00EAs Nome],"Fat",[Faturamento Pocket]),FILTER(ALL(d_calendario),d_calendario[Ano]=2025))
 
-EXEMPLOS CORRETOS:
-Pergunta: "faturamento por mes em 2025"
-DAX: EVALUATE CALCULATETABLE(SUMMARIZECOLUMNS(d_calendario[Ano-Mes],d_calendario[Mes Nome],"Fat",[Faturamento Pocket]),FILTER(ALL(d_calendario),d_calendario[Ano]=2025))
+Q: faturamento total em janeiro 2025
+A: EVALUATE CALCULATETABLE(ROW("Fat",[Faturamento Pocket]),d_calendario[Ano]=2025,d_calendario[M\u00EAs N\u00FAmero]=1)
 
-Pergunta: "faturamento total de janeiro 2025"
-DAX: EVALUATE CALCULATETABLE(ROW("Fat",[Faturamento Pocket]),d_calendario[Ano]=2025,d_calendario[Mes Numero]=1)
+Q: top 5 familias por faturamento
+A: EVALUATE TOPN(5,SUMMARIZECOLUMNS(f_faturamento[Agrupamento N\u00EDvel 1],"Fat",[Faturamento Pocket]),[Fat],DESC)
 
-Pergunta: "top 5 familias por faturamento"
-DAX: EVALUATE TOPN(5,SUMMARIZECOLUMNS(f_faturamento[Agrupamento Nivel 1],"Fat",[Faturamento Pocket]),[Fat],DESC)
+Q: faturamento total 2025
+A: EVALUATE CALCULATETABLE(ROW("Fat",[Faturamento Pocket]),FILTER(ALL(d_calendario),d_calendario[Ano]=2025))
 
-Pergunta: "faturamento total 2025"
-DAX: EVALUATE CALCULATETABLE(ROW("Fat",[Faturamento Pocket]),FILTER(ALL(d_calendario),d_calendario[Ano]=2025))`;
+Q: faturamento por UF
+A: EVALUATE SUMMARIZECOLUMNS(f_faturamento[UF],"Fat",[Faturamento Pocket])
+
+REGRAS: EVALUATE obrigatorio. Para filtrar use d_calendario[Ano]=2025 (inteiro). Para agrupar por mes use d_calendario[Ano-M\u00EAs]. SUMMARIZECOLUMNS nao aceita filtros inline - use CALCULATETABLE ao redor.`;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 300,
-          system: SCHEMA + '\n\nRetorne SOMENTE o DAX puro sem espacos extras, sem markdown, sem backticks, sem explicacao.',
+          system: SCHEMA + '\n\nRetorne SOMENTE o DAX puro. Sem explicacoes. Sem markdown. Sem backticks.',
           messages: [{ role: 'user', content: question }]
         })
       });
@@ -65,10 +65,10 @@ export default async function handler(req, res) {
 
     const ctx = pbiContext || '';
     const sys = 'Voce e assistente executivo da Quartzolit (Saint-Gobain Brasil). '
-      + 'Acesso ao modelo semantico Power BI com dados desde jan/2025. '
+      + 'Acesso completo ao modelo semantico Power BI desde jan/2025. '
       + (ctx ? ctx + '\n\n' : '')
       + 'REGRAS: Portugues. Slicer = selecao atual nao restricao. '
-      + 'Se recebeu DADOS REAIS use exatamente. NUNCA diga que nao tem dados. '
+      + 'Se recebeu DADOS REAIS use exatamente esses numeros. NUNCA diga que nao tem dados. '
       + '**negrito** para numeros. R$ para valores. % para percentuais.';
 
     const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -83,4 +83,4 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
-          }
+}
