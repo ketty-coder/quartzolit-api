@@ -6,77 +6,49 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { messages, pbiContext } = req.body;
-    if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: 'messages required' });
+    const { messages, pbiContext, action, question, schema } = req.body;
 
-    const lastMsg = messages[messages.length - 1].content || '';
-
-    // Detecta perguntas que precisam consultar dados do modelo semantico
-    const needsQuery = /faturamento|receita|volume|margem|custo|preco|sell.?in|price.?index|desconto|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez|janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|2024|2025|2026|mes|ano|total|quanto|historico|familia|categoria|filial|estado|uf|crescimento|queda|evolucao|ranking|top|maior|menor|melhor|pior/i.test(lastMsg);
-
-    let queryResult = '';
-
-    if (needsQuery) {
-      try {
-        const host = req.headers.host || 'quartzolit-api-6a8h.vercel.app';
-        const protocol = host.includes('localhost') ? 'http' : 'https';
-        const qRes = await fetch(protocol + '://' + host + '/api/query', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: lastMsg })
-        });
-        const qData = await qRes.json();
-        if (qData.result && qData.result.results && qData.result.results[0] && qData.result.results[0].tables) {
-          const rows = qData.result.results[0].tables[0].rows || [];
-          if (rows.length > 0) {
-            queryResult = 'RESULTADO DA CONSULTA AO MODELO SEMANTICO:\n'
-              + 'Query executada: ' + (qData.dax || '').substring(0, 300) + '\n'
-              + 'Dados: ' + JSON.stringify(rows).substring(0, 1500);
-          } else {
-            queryResult = 'Consulta executada mas nao retornou dados. Query: ' + (qData.dax || '');
-          }
-        } else if (qData.error) {
-          queryResult = 'Erro na consulta: ' + qData.error;
-        }
-      } catch(qe) {
-        queryResult = 'Erro ao consultar modelo: ' + qe.message;
-      }
+    // MODO 1: Gerar DAX a partir de pergunta em linguagem natural
+    if (action === 'gerar_dax') {
+      if (!question) return res.status(400).json({ error: 'question required' });
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 300,
+          system: 'Voce e especialista em DAX para Power BI. ' +
+            'Dado o schema: ' + (schema || '') + ' ' +
+            'Gere APENAS a query DAX para responder a pergunta. ' +
+            'Retorne SOMENTE o DAX puro, sem explicacoes, sem markdown, sem backticks. ' +
+            'Use EVALUATE obrigatoriamente. Para filtrar mes use d_calendario[Ano-Mes Label]="mes/ano".',
+          messages: [{ role: 'user', content: question }]
+        })
+      });
+      const d = await r.json();
+      const dax = d.content && d.content[0] ? d.content[0].text.trim() : '';
+      return res.status(200).json({ dax: dax });
     }
 
-    // Sistema prompt com contexto correto
-    const slicer = pbiContext
-      ? 'FILTRO ATUAL DOS SLICERS DO DASHBOARD:\n' + pbiContext + '\n' +
-        'IMPORTANTE: Este filtro mostra apenas o PERIODO SELECIONADO no dashboard. ' +
-        'O modelo semantico contem dados completos desde jan/2025 independente deste filtro.'
-      : '';
+    // MODO 2: Responder com contexto
+    if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: 'messages required' });
 
-    const queryCtx = queryResult
-      ? '\n\n' + queryResult
-      : '';
-
-    const sys = 'Voce e assistente executivo de dados da Quartzolit (Saint-Gobain Brasil). ' +
-      'Tem acesso completo ao modelo semantico Power BI com dados desde jan/2025. ' +
-      (slicer ? slicer + queryCtx : queryCtx.trim()) +
-      '\n\nREGRAS CRITICAS: ' +
-      '1) Responda SEMPRE em portugues. ' +
-      '2) O periodo mostrado no dashboard (ex: set/2025 vs abr/2025) e apenas o FILTRO ATUAL - NAO e o limite dos dados. ' +
-      '3) Para perguntas sobre outros periodos ou dados historicos, use os RESULTADOS DA CONSULTA acima. ' +
-      '4) Se a consulta retornou dados, use EXATAMENTE esses numeros. ' +
-      '5) NUNCA diga que nao tem dados de um periodo sem tentar consultar primeiro. ' +
-      '6) Use **negrito** para numeros importantes. ' +
-      '7) Formatos: R$ para valores, % para percentuais. ' +
-      '8) Score: verde=saudavel, vermelho=critico.';
+    const ctx = pbiContext || '';
+    const sys = 'Voce e assistente executivo da Quartzolit (Saint-Gobain Brasil). ' +
+      'Tem acesso ao modelo semantico Power BI com dados desde jan/2025. ' +
+      (ctx ? ctx + '\n\n' : '') +
+      'REGRAS: 1) Responda em portugues. ' +
+      '2) O slicer do dashboard mostra apenas uma selecao - nao e restricao de dados. ' +
+      '3) Se recebeu DADOS REAIS, use-os exatamente. ' +
+      '4) NUNCA diga que nao tem dados sem ter consultado. ' +
+      '5) Use **negrito** para numeros. Formato: R$ para valores, % para percentuais.';
 
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json',
         'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 800,
-        system: sys,
-        messages: messages
-      })
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 800, system: sys, messages: messages })
     });
     const data = await r.json();
     return res.status(200).json(data);
