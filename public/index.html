@@ -28,6 +28,7 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
 .pdf-btn{display:inline-flex;align-items:center;gap:4px;margin-top:7px;background:none;border:1px solid #ddd;color:#888;font-size:10px;padding:3px 9px;border-radius:10px;cursor:pointer;font-family:inherit}
 .pdf-btn:hover{border-color:#FFD100;color:#000}
 .foot{padding:8px 10px;background:#fff;border-top:2px solid #FFD100;display:flex;gap:7px;align-items:center;flex-shrink:0}
+.ftr{text-align:center;font-size:9px;color:#bbb;padding:3px 0 4px;background:#fff;flex-shrink:0;letter-spacing:.3px}
 #editor{flex:1;background:#f5f5f5;border:1.5px solid #ccc;color:#111;padding:9px 13px;border-radius:9px;font-size:13px;outline:none;font-family:inherit;min-height:38px;max-height:80px;overflow-y:auto;cursor:text}
 #editor:focus{border-color:#FFD100;background:#fff}
 #editor:empty:before{content:'Pergunte sobre qualquer dado do modelo...';color:#aaa;pointer-events:none}
@@ -41,6 +42,7 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
   <div class="hdr"><div class="dot"></div><h1>QUARTZOLIT AI</h1><em id="hdrInfo">Assistente de Dados</em></div>
   <div class="msgs" id="msgs"><div class="bbl a" id="msgInicial">Ola!</div></div>
   <div class="foot"><div id="editor" contenteditable="true"></div><button id="btn">&#9658;</button></div>
+  <div class="ftr">Desenvolvido por <b style="color:#aaa">QuantiZ</b> &nbsp;&middot;&nbsp; v1</div>
 </div>
 <script>
 var p = new URLSearchParams(window.location.search);
