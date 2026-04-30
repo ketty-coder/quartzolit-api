@@ -1,0 +1,6 @@
+.env
+.env.local
+.vercel
+node_modules/
+.env*.local
+test-pbi.js
