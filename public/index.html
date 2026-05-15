@@ -18,6 +18,17 @@ html,body{width:100%;height:100%;font-family:'Segoe UI',sans-serif;background:#f
 .bbl.u{background:#000;color:#FFD100;align-self:flex-end;border-radius:12px 12px 3px 12px;font-weight:600}
 .bbl.a{background:#fff;color:#222;align-self:flex-start;border:1px solid #ddd;border-radius:12px 12px 12px 3px}
 .bbl.a b{color:#000}
+.tbl-wrap{margin:10px 0;overflow-x:auto;border:1px solid #eee;border-radius:10px}
+.tbl{width:100%;border-collapse:collapse;font-size:11px;background:#fff}
+.tbl th{background:#111;color:#FFD100;text-align:left;padding:7px 9px;font-weight:700;white-space:nowrap}
+.tbl td{border-top:1px solid #eee;padding:7px 9px;vertical-align:top}
+.tbl tr:nth-child(even) td{background:#fafafa}
+.tbl td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chart-card{max-width:96%;background:linear-gradient(180deg,#fff,#fafafa);border:1px solid #e6e6e6;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+.chart-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#111;margin-bottom:4px}
+.chart-title:before{content:'';width:8px;height:22px;border-radius:6px;background:#FFD100;display:inline-block}
+.chart-sub{font-size:10px;color:#888;margin-bottom:12px}
+.chart-box{position:relative;height:260px;background:#fff;border:1px solid #f0f0f0;border-radius:12px;padding:10px}
 .bbl.t{background:#fff;border:1px solid #ddd;align-self:flex-start;padding:8px 13px;color:#888;font-size:11px}
 .dots span{display:inline-block;width:6px;height:6px;background:#FFD100;border-radius:50%;animation:bo 1.2s infinite;margin:0 2px}
 .dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
@@ -62,9 +73,9 @@ var slicerCtx = atual
   : '';
 
 var suggs = '<div class="suggs">'
-  +'<span class="sg" id="s1">Top 5 familias com score mais alto</span>'
+  +'<span class="sg" id="s1">Top 5 chaves com score mais crítico</span>'
   +'<span class="sg" id="s2">Faturamento por mes em 2025</span>'
-  +'<span class="sg" id="s3">Top 5 familias por receita</span>'
+  +'<span class="sg" id="s3">Top 5 produtos por receita</span>'
   +'<span class="sg" id="s4">Resumo executivo</span>'
   +'</div>';
 
@@ -72,7 +83,7 @@ var suggs = '<div class="suggs">'
 var mi = document.getElementById('msgInicial');
 mi.innerHTML = 'Ola! Sou a IA da Quartzolit com acesso ao modelo semantico Power BI.<br><br>'
   +'Posso responder sobre <b>qualquer dado disponivel no modelo</b>: '
-  +'receita, faturamento, volume, margem, preco, por mes, familia, UF, filial.'
+  +'receita, faturamento, volume, margem, preco, por mes, chave, produto, UF, filial.'
   +suggs;
 
 ['s1','s2','s3','s4'].forEach(function(id){
@@ -83,6 +94,46 @@ mi.innerHTML = 'Ola! Sou a IA da Quartzolit com acesso ao modelo semantico Power
 var H=[]; var M=document.getElementById('msgs'); var ed=document.getElementById('editor'); var btn=document.getElementById('btn');
 function sb(){M.scrollTop=M.scrollHeight;}
 function boldify(t){var parts=t.split('**');var r='';for(var i=0;i<parts.length;i++)r+=i%2===0?parts[i]:'<b>'+parts[i]+'</b>';return r.split('\n').join('<br>');}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function isTableSep(line){return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);}
+function splitRow(line){return line.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(function(x){return x.trim();});}
+function isNumCell(s){return /^[-+]?R?\$?\s*[\d.,]+%?$/.test(String(s).replace(/\s/g,''));}
+function renderMdTables(t){
+  var lines=t.split('\n'), out=[], i=0;
+  while(i<lines.length){
+    if(lines[i].indexOf('|')>-1 && lines[i+1] && isTableSep(lines[i+1])){
+      var head=splitRow(lines[i]); i+=2;
+      var rows=[];
+      while(i<lines.length && lines[i].indexOf('|')>-1 && !isTableSep(lines[i])){
+        rows.push(splitRow(lines[i])); i++;
+      }
+      var html='<div class="tbl-wrap"><table class="tbl"><thead><tr>';
+      head.forEach(function(h){html+='<th>'+boldify(escHtml(h))+'</th>';});
+      html+='</tr></thead><tbody>';
+      rows.forEach(function(r){html+='<tr>';head.forEach(function(_,idx){var c=r[idx]||'';html+='<td class="'+(isNumCell(c)?'num':'')+'">'+boldify(escHtml(c))+'</td>';});html+='</tr>';});
+      html+='</tbody></table></div>';
+      out.push(html);
+    } else {
+      out.push(boldify(escHtml(lines[i])));
+      i++;
+    }
+  }
+  return out.join('<br>');
+}
+function renderText(t){
+  var idx=t.search(/Deseja aprofundar em:/i);
+  if(idx<0)return renderMdTables(t);
+  var intro=t.slice(0,idx);
+  var tail=t.slice(idx).split('\n');
+  var title=tail.shift();
+  var html=renderMdTables(intro+(intro?'\n':'')+title)+'<div class="suggs">';
+  tail.forEach(function(line){
+    var q=line.replace(/^\s*[-•]\s*/,'').replace(/^[✅☑️✔]\s*/,'').trim();
+    if(!q)return;
+    html+='<button class="sg deep-sg" type="button" data-q="'+escHtml(q)+'">'+escHtml(q)+'</button>';
+  });
+  return html+'</div>';
+}
 function exportPdf(txt,pergunta){
   var w=window.open('','_blank','width=700,height=900');
   w.document.write('<html><head><meta charset="UTF-8"><title>Quartzolit AI — Exportar</title>'
@@ -104,7 +155,10 @@ function exportPdf(txt,pergunta){
 function am(t,c){
   var d=document.createElement('div');
   d.className='bbl '+c;
-  d.innerHTML=boldify(t);
+  d.innerHTML=renderText(t);
+  d.querySelectorAll('.deep-sg').forEach(function(x){
+    x.addEventListener('click',function(){ ed.textContent=this.getAttribute('data-q')||this.textContent; go(); });
+  });
   if(c==='a'){
     var lastUser=H.length>=2?H[H.length-2].content:'';
     var btn2=document.createElement('button');
@@ -120,21 +174,58 @@ function rt(){var t=document.getElementById('tp');if(t)t.remove();}
 function ut(msg){var t=document.getElementById('tp');if(t)t.innerHTML=msg;}
 
 function precisaQuery(txt){
-  return /faturamento|receita|volume|margem|custo|preco|sell.?in|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez|janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|2024|2025|2026|mes|ano|total|quanto|historico|familia|categoria|filial|estado|uf|top|maior|menor|rank|evolucao|crescimento|queda/i.test(txt);
+  return /faturamento|receita|volume|margem|custo|preco|sell.?in|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez|janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|2024|2025|2026|mes|ano|total|quanto|historico|familia|chave|produto|agrupamento|categoria|filial|estado|uf|top|maior|menor|rank|evolucao|crescimento|queda/i.test(txt);
 }
 function precisaGrafico(txt){
   return /gr[áa]fico|gr[áa]f\b|chart|barra|pizza|linha|plot|visualiz|evoluc|tendencia/i.test(txt);
+}
+function isTopChavesCriticas(txt){
+  return /top\s*5/i.test(txt) && /chaves?|produtos?|familias?/i.test(txt) && /score/i.test(txt) && /critic|crític|vermelh/i.test(txt);
+}
+function daxRapido(txt){
+  if(isTopChavesCriticas(txt)){
+    return 'EVALUATE TOPN(5,FILTER(SUMMARIZECOLUMNS(d_uf[UF],f_faturamento[Agrupamento Clientes],f_faturamento[Agrupamento Nível 1],f_faturamento[Agrupamento Nível 3],"@inicio",FORMAT(CALCULATE(MIN(d_calendario[Data]),ALL(d_calendario)),"MMM/YYYY"),"@fim",FORMAT(CALCULATE(MAX(d_calendario[Data]),ALL(d_calendario)),"MMM/YYYY"),"@score",[Score Ponderado],"@class",[Classificação],"@alerta",[Alerta Chave],"@qtd",[Qtd Tipos Disparados],"@rec",[Variação % Receita],"@vol",[Variação % Volume],"@mar",[Variação % Margem]),[@score]>50&&[@class]="Vermelho"&&[@alerta]<>"✅ SEM ALERTA"),[@score],DESC)';
+  }
+  return '';
+}
+function fmtPct(v){
+  if(v===null||v===undefined||v==='')return 'N/D';
+  var n=Number(v);
+  if(isNaN(n))return String(v);
+  if(Math.abs(n)<=1)n=n*100;
+  return (n>=0?'+':'')+n.toFixed(1)+'%';
+}
+function respostaTopChaves(rows,temSlicer){
+  if(!rows||!rows.length)return 'A consulta retornou **0 chaves críticas** com Score Ponderado > 50 e Classificação Vermelho. Não vou listar nomes porque nenhum produto/chave foi retornado pelo modelo.';
+  var ini=rows[0]['[@inicio]']||'', fim=rows[0]['[@fim]']||'';
+  var txt='Usei dados reais do modelo. ';
+  if(!temSlicer&&ini&&fim)txt+='Como você não informou período, usei o intervalo disponível no calendário do modelo: **'+ini+' até '+fim+'**. ';
+  txt+='**Top 5 chaves com score mais crítico**:\n';
+  rows.forEach(function(r,i){
+    var uf=r['d_uf[UF]']||r['[UF]']||'UF N/D';
+    var cli=r['f_faturamento[Agrupamento Clientes]']||'Cliente N/D';
+    var n1=r['f_faturamento[Agrupamento Nível 1]']||'';
+    var prod=r['f_faturamento[Agrupamento Nível 3]']||'Produto N/D';
+    var score=r['[@score]'];
+    var cls=r['[@class]']||'';
+    var alerta=r['[@alerta]']||'';
+    txt+='\n'+(i+1)+'. **'+uf+' | '+cli+' | '+(n1?n1+' | ':'')+prod+'** — Score Ponderado **'+Number(score).toFixed(1)+'**';
+    if(cls)txt+=' — '+cls;
+    if(alerta)txt+=' — '+alerta;
+    txt+='\n   Receita: '+fmtPct(r['[@rec]'])+' | Volume: '+fmtPct(r['[@vol]'])+' | Margem: '+fmtPct(r['[@mar]']);
+  });
+  return txt;
 }
 var _chartCount=0;
 function renderChart(cfg,pergunta){
   _chartCount++;
   var cid='ch'+_chartCount;
   var wrap=document.createElement('div');
-  wrap.className='bbl a';
-  wrap.style.maxWidth='96%';
+  wrap.className='bbl a chart-card';
   var titulo=cfg.title||pergunta;
-  wrap.innerHTML='<div style="font-size:11px;font-weight:700;color:#333;margin-bottom:8px">'+titulo+'</div>'
-    +'<canvas id="'+cid+'" style="max-height:200px"></canvas>';
+  wrap.innerHTML='<div class="chart-title">'+titulo+'</div>'
+    +'<div class="chart-sub">Visual gerado com dados reais do modelo Power BI</div>'
+    +'<div class="chart-box"><canvas id="'+cid+'"></canvas></div>';
   var bpdf=document.createElement('button');
   bpdf.className='pdf-btn';
   bpdf.innerHTML='&#128196; Exportar PDF';
@@ -158,17 +249,17 @@ function renderChart(cfg,pergunta){
       data:{
         labels:cfg.labels||[],
         datasets:(cfg.datasets||[]).map(function(ds,i){
-          var cl=['#FFD100','#222','#888','#ccc'];
+          var cl=['#FFD100','#111','#6b7280','#d1d5db'];
           return {label:ds.label||'',data:ds.data||[],
-            backgroundColor:cfg.type==='line'?'rgba(255,209,0,0.08)':(cl[i%4]),
+            backgroundColor:cfg.type==='line'?'rgba(255,209,0,0.16)':(cl[i%4]),
             borderColor:cfg.type==='line'?'#FFD100':(cl[i%4]),
-            borderWidth:cfg.type==='line'?2:1,fill:cfg.type==='line',
-            tension:0.35,pointBackgroundColor:'#FFD100',pointRadius:3};
+            borderWidth:cfg.type==='line'?3:1,borderRadius:cfg.type==='bar'?8:0,fill:cfg.type==='line',
+            tension:0.35,pointBackgroundColor:'#111',pointBorderColor:'#FFD100',pointBorderWidth:2,pointRadius:4};
         })
       },
-      options:{responsive:true,
-        plugins:{legend:{labels:{font:{size:10},color:'#444'}}},
-        scales:cfg.type!=='pie'?{y:{ticks:{font:{size:9}},grid:{color:'#f0f0f0'}},x:{ticks:{font:{size:9},maxRotation:45},grid:{display:false}}}:{}}
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{boxWidth:10,usePointStyle:true,font:{size:10,weight:'600'},color:'#333'}},tooltip:{backgroundColor:'#111',titleColor:'#FFD100',bodyColor:'#fff',padding:10,cornerRadius:8}},
+        scales:cfg.type!=='pie'?{y:{ticks:{font:{size:10},color:'#666'},grid:{color:'#f0f0f0'}},x:{ticks:{font:{size:10},color:'#666',maxRotation:45},grid:{display:false}}}:{}}
     });
   },80);
 }
@@ -179,11 +270,13 @@ function go(){
   ed.textContent=''; btn.disabled=true;
   am(t,'u'); H.push({role:'user',content:t});
 
-  if(precisaQuery(t)){
+  if(precisaQuery(t)||precisaGrafico(t)){
     st('Gerando consulta ao modelo...');
-    fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+    var fastDax=daxRapido(t);
+    var daxPromise=fastDax ? Promise.resolve({dax:fastDax,fast:true}) : fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:'gerar_dax',question:t})
-    }).then(function(r){return r.json();}).then(function(d){
+    }).then(function(r){return r.json();});
+    daxPromise.then(function(d){
       var daxQuery=d.dax||'';
       if(!daxQuery){ ut('Interpretando...'); return callClaude(t,slicerCtx); }
       ut('Consultando modelo semantico Power BI...');
@@ -195,10 +288,16 @@ function go(){
         var rows=[];
         if(qd.results&&qd.results[0]&&qd.results[0].tables){
           rows=qd.results[0].tables[0].rows||[];
-          if(rows.length>0) queryCtx='DADOS REAIS DO MODELO:\n'+JSON.stringify(rows).substring(0,2000);
-          else queryCtx='Consulta retornou 0 linhas.';
-        } else if(qd.error){ queryCtx='Erro: '+JSON.stringify(qd.error); }
-        if(precisaGrafico(t)&&rows.length>0){
+          if(rows.length>0) queryCtx='DADOS REAIS DO MODELO:\n'+JSON.stringify(rows).substring(0,4000);
+          else queryCtx='Consulta retornou 0 linhas. NAO liste nomes de produtos, clientes, UFs ou chaves.';
+        } else if(qd.error){ queryCtx='Erro na consulta ao modelo: '+JSON.stringify(qd.error)+'. NAO liste nomes de produtos, clientes, UFs ou chaves.'; }
+        if(d.fast&&isTopChavesCriticas(t)){
+          rt();
+          var rep=respostaTopChaves(rows,!!slicerCtx);
+          H.push({role:'assistant',content:rep});
+          am(rep,'a');
+          btn.disabled=false;ed.focus();
+        } else if(precisaGrafico(t)&&rows.length>0){
           ut('Gerando gráfico...');
           fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
             body:JSON.stringify({action:'gerar_grafico',question:t,dados:rows})

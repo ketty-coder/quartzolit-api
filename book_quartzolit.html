@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Central de Comando Quartzolit — Book Técnico</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;900&family=Kaisei+HarunoUmi:wght@400;700&display=swap');
+
+  /* ===== QUANTIZ BRAND TOKENS ===== */
+  :root{
+    --navy:     #151F38;
+    --amber:    #FAA954;
+    --amber-lt: #FFBC7D;
+    --teal:     #2089A4;
+    --mid:      #495678;
+    --muted:    #8EA6AC;
+    --bg-light: #F4F5F8;
+    --white:    #FFFFFF;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a2e;font-size:13px;line-height:1.6}
+
+  /* ===== CAPA ===== */
+  .cover{width:100%;height:100vh;min-height:700px;background:var(--navy);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:80px;page-break-after:always;position:relative;overflow:hidden}
+  .cover::before{content:'';position:absolute;top:0;right:0;width:42%;height:100%;background:var(--teal);clip-path:polygon(28% 0,100% 0,100% 100%,0% 100%);opacity:.18}
+  .cover::after{content:'';position:absolute;top:0;right:0;width:36%;height:100%;background:var(--amber);clip-path:polygon(40% 0,100% 0,100% 100%,10% 100%);opacity:.12}
+  /* hexagon decoration */
+  .cover-hex{position:absolute;top:60px;right:100px;opacity:.15;z-index:0}
+  .cover-tag{background:var(--amber);color:var(--navy);font-size:10px;font-weight:700;letter-spacing:2px;padding:4px 14px;border-radius:2px;display:inline-block;margin-bottom:28px;position:relative;z-index:1;text-transform:uppercase}
+  .cover h1{font-family:'Kaisei HarunoUmi','Montserrat',sans-serif;font-size:54px;font-weight:700;color:var(--white);line-height:1.1;position:relative;z-index:1;max-width:62%}
+  .cover h1 span{color:var(--amber)}
+  .cover-sub{font-size:15px;color:var(--muted);margin-top:22px;position:relative;z-index:1;font-weight:300;letter-spacing:.5px}
+  .cover-divider{width:60px;height:3px;background:var(--amber);margin:20px 0;position:relative;z-index:1}
+  .cover-meta{position:absolute;bottom:60px;left:80px;z-index:1}
+  .cover-meta p{font-size:11px;color:var(--mid);margin-bottom:4px}
+  .cover-meta strong{color:var(--amber);font-size:14px;font-weight:700;letter-spacing:.5px}
+  .cover-logo{position:absolute;bottom:60px;right:80px;z-index:1;text-align:right}
+  .cover-logo p{font-size:18px;font-weight:900;color:var(--white);letter-spacing:3px;text-transform:uppercase}
+  .cover-logo span{color:var(--amber)}
+  .cover-logo small{display:block;font-size:9px;color:var(--mid);letter-spacing:1px;margin-top:4px;text-transform:uppercase}
+  .cover-qz{position:absolute;top:40px;right:80px;z-index:2}
+  .cover-qz img{height:36px;opacity:.9}
+  .cover-qz-txt{position:absolute;top:40px;right:80px;z-index:2;text-align:right}
+  .cover-qz-txt span{font-size:22px;font-weight:900;color:var(--white);letter-spacing:2px;font-family:'Kaisei HarunoUmi',serif}
+  .cover-qz-txt span b{color:var(--amber)}
+  .cover-qz-txt small{display:block;font-size:8px;color:var(--muted);letter-spacing:2px;margin-top:2px}
+
+  /* ===== SLIDE SECTION DIVIDER ===== */
+  .section-div{width:100%;height:100vh;min-height:600px;background:var(--navy);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:80px;page-break-after:always;page-break-before:always;position:relative;overflow:hidden}
+  .section-div::before{content:'';position:absolute;bottom:0;right:0;width:50%;height:60%;background:var(--teal);clip-path:polygon(30% 100%,100% 0,100% 100%);opacity:.08}
+  .section-div .num{font-family:'Kaisei HarunoUmi',serif;font-size:140px;font-weight:700;color:rgba(250,169,84,0.12);line-height:1;margin-bottom:-28px;position:relative;z-index:1}
+  .section-div .num-bar{width:50px;height:4px;background:var(--amber);margin-bottom:20px;position:relative;z-index:1}
+  .section-div h2{font-family:'Kaisei HarunoUmi','Montserrat',sans-serif;font-size:46px;font-weight:700;color:var(--white);line-height:1.15;max-width:70%;position:relative;z-index:1}
+  .section-div h2 em{color:var(--amber);font-style:normal}
+  .section-div p{font-size:14px;color:var(--muted);margin-top:18px;max-width:60%;position:relative;z-index:1;font-weight:300}
+
+  /* ===== SLIDE CONTENT ===== */
+  .slide{width:100%;min-height:100vh;padding:56px 80px;page-break-after:always;display:flex;flex-direction:column;justify-content:flex-start}
+  .slide-sm{min-height:auto;padding:50px 80px;page-break-after:always}
+  .slide-header{display:flex;align-items:center;gap:14px;margin-bottom:34px;padding-bottom:14px;border-bottom:2px solid var(--amber)}
+  .slide-header .tag{background:var(--navy);color:var(--amber);font-size:9px;font-weight:700;letter-spacing:2px;padding:4px 12px;border-radius:2px;white-space:nowrap;border:1px solid var(--amber);text-transform:uppercase}
+  .slide-header h3{font-family:'Kaisei HarunoUmi','Montserrat',sans-serif;font-size:21px;font-weight:700;color:var(--navy)}
+
+  /* ===== COMPONENTS ===== */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:8px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:8px}
+  .card{background:var(--bg-light);border:1px solid #e4e7ef;border-radius:8px;padding:20px}
+  .card-y{background:#fff8f0;border:2px solid var(--amber);border-radius:8px;padding:20px}
+  .card-dark{background:var(--navy);border-radius:8px;padding:20px;color:var(--white)}
+  .card-teal{background:var(--teal);border-radius:8px;padding:20px;color:var(--white)}
+  .card h4{font-size:13px;font-weight:700;margin-bottom:10px;color:var(--navy)}
+  .card-dark h4{color:var(--amber)}
+  .card-teal h4{color:var(--white);font-weight:700}
+  .card p, .card li{font-size:12px;color:#495678;line-height:1.7}
+  .card-dark p, .card-dark li{color:var(--muted)}
+  .card-teal p, .card-teal li{color:rgba(255,255,255,.85)}
+  .card ul, .card-dark ul{padding-left:16px}
+  .card-dark ul{padding-left:16px}
+
+  .badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 9px;border-radius:10px;margin-right:4px}
+  .badge-g{background:#d4edda;color:#155724}
+  .badge-y{background:#fff3cd;color:#856404}
+  .badge-r{background:#f8d7da;color:#721c24}
+  .badge-b{background:var(--navy);color:var(--amber)}
+  .badge-t{background:var(--teal);color:#fff}
+
+  .flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:16px 0}
+  .flow-box{background:var(--navy);color:var(--amber);padding:10px 16px;border-radius:6px;font-size:11px;font-weight:600;text-align:center;white-space:nowrap;border:1px solid rgba(250,169,84,.3)}
+  .flow-arrow{font-size:18px;color:var(--amber);padding:0 8px;font-weight:900}
+  .flow-box-y{background:var(--amber);color:var(--navy);padding:10px 16px;border-radius:6px;font-size:11px;font-weight:700;text-align:center;white-space:nowrap}
+
+  table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:8px}
+  th{background:var(--navy);color:var(--amber);padding:9px 13px;text-align:left;font-weight:600;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase}
+  td{padding:7px 12px;border-bottom:1px solid #eaedf3;color:#333;vertical-align:top}
+  tr:nth-child(even) td{background:var(--bg-light)}
+  tr:hover td{background:#eef0f5}
+
+  .kpi-row{display:flex;gap:16px;margin:16px 0;flex-wrap:wrap}
+  .kpi{background:var(--navy);color:var(--white);border-radius:8px;padding:18px 22px;flex:1;min-width:120px;text-align:center;border-bottom:3px solid var(--amber)}
+  .kpi .val{font-family:'Kaisei HarunoUmi',serif;font-size:30px;font-weight:700;color:var(--amber);line-height:1}
+  .kpi .lbl{font-size:10px;color:var(--muted);margin-top:7px;letter-spacing:.5px}
+
+  .code{background:#0d1628;color:#FFBC7D;border-radius:8px;padding:16px 20px;font-family:'Courier New',monospace;font-size:11px;line-height:1.9;margin:12px 0;overflow-x:auto;border:1px solid rgba(32,137,164,.2)}
+  .code .cm{color:#495678}
+  .code .kw{color:var(--white);font-weight:700}
+  .code .str{color:#8EA6AC}
+  .code .fn{color:var(--teal)}
+
+  .timeline{margin-top:16px}
+  .tl-item{display:flex;gap:16px;margin-bottom:22px}
+  .tl-dot{width:12px;height:12px;border-radius:50%;background:var(--amber);flex-shrink:0;margin-top:4px;box-shadow:0 0 0 3px rgba(250,169,84,.2)}
+  .tl-line{width:2px;background:#e4e7ef;margin-left:5px;margin-top:16px;height:20px}
+  .tl-content h5{font-size:12px;font-weight:700;margin-bottom:4px;color:var(--navy)}
+  .tl-content p{font-size:11px;color:var(--mid)}
+
+  .highlight{background:#fff8f0;border-left:4px solid var(--amber);padding:12px 16px;border-radius:0 6px 6px 0;margin:12px 0;font-size:12px;color:var(--navy)}
+
+  .semaforo{display:flex;gap:16px;margin-top:16px}
+  .sem{border-radius:8px;padding:16px;flex:1;text-align:center}
+  .sem-g{background:#d4edda;border:2px solid #28a745}
+  .sem-y{background:#fff3cd;border:2px solid #ffc107}
+  .sem-r{background:#f8d7da;border:2px solid #dc3545}
+  .sem .circle{width:32px;height:32px;border-radius:50%;margin:0 auto 8px;font-size:18px;display:flex;align-items:center;justify-content:center}
+  .sem-g .circle{background:#28a745}
+  .sem-y .circle{background:#ffc107}
+  .sem-r .circle{background:#dc3545}
+  .sem h5{font-size:12px;font-weight:700;margin-bottom:4px}
+  .sem p{font-size:11px;color:#555}
+
+  .arch-box{border:2px solid var(--amber);border-radius:8px;padding:14px 18px;margin:6px 0;position:relative}
+  .arch-box .arch-label{position:absolute;top:-9px;left:12px;background:var(--amber);color:var(--navy);font-size:9px;font-weight:700;padding:2px 10px;border-radius:2px;letter-spacing:1px;text-transform:uppercase}
+  .arch-box p{font-size:11.5px;color:#333}
+  .arch-arrow-down{text-align:center;font-size:20px;color:var(--amber);font-weight:900;margin:2px 0}
+
+  /* ===== QUANTIZ LOGO MARK ===== */
+  .qz-mark{display:inline-flex;align-items:baseline;gap:0;font-family:'Montserrat',sans-serif;font-weight:900;letter-spacing:1px}
+  .qz-mark .qz-q{color:var(--white)}
+  .qz-mark .qz-z{color:var(--amber)}
+  .qz-mark .qz-rest{color:var(--white)}
+
+  /* ===== FOOTER LINE ===== */
+  .slide-footer{position:absolute;bottom:30px;left:80px;right:80px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e4e7ef;padding-top:10px}
+  .slide-footer span{font-size:9px;color:#aaa;letter-spacing:1px}
+
+  @media print{
+    .slide,.section-div,.cover{page-break-after:always}
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    @page{size:A4 landscape;margin:0}
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== CAPA ========== -->
+<div class="cover">
+  <!-- QuantiZ wordmark top-right -->
+  <div class="cover-qz-txt">
+    <span>Quanti<b>Z</b></span>
+    <small>Pricing Solutions</small>
+  </div>
+  <div class="cover-tag">Book Técnico · v1.0 · Abril / 2026</div>
+  <h1>Central de<br><span>Comando</span><br>Quartzolit</h1>
+  <div class="cover-divider"></div>
+  <p class="cover-sub">Modelo de Dados · Regras de Negócio · IA Integrada</p>
+  <div class="cover-meta">
+    <p>Desenvolvido por</p>
+    <strong>QuantiZ Pricing Solutions</strong>
+    <p style="margin-top:8px;font-size:10px;color:#495678">Saint-Gobain Brasil · Dados jan/2025 → fev/2026</p>
+  </div>
+  <div class="cover-logo">
+    <p>QUART<span>Z</span>OLIT</p>
+    <small>Saint-Gobain Brasil</small>
+  </div>
+</div>
+
+<!-- ========== ÍNDICE ========== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">ÍNDICE</span>
+    <h3>O que você vai encontrar neste book</h3>
+  </div>
+  <div class="grid2" style="margin-top:20px">
+    <div class="card-dark">
+      <h4>01 · VISÃO GERAL</h4>
+      <ul style="margin-top:8px">
+        <li>O problema que resolvemos</li>
+        <li>Arquitetura completa da solução</li>
+        <li>Stack tecnológica</li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>02 · MODELO DE DADOS</h4>
+      <ul style="margin-top:8px">
+        <li>Fontes de dados (SAP, Custos, BRInsights)</li>
+        <li>Tabelas fato e dimensões</li>
+        <li>Relacionamentos e chaves compostas</li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>03 · REGRAS DE NEGÓCIO</h4>
+      <ul style="margin-top:8px">
+        <li>Score Final 0–100</li>
+        <li>Semáforo dinâmico P10/P90</li>
+        <li>Ponto de Ataque T1/T2/T3</li>
+        <li>Deterioração Sistêmica</li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>04 · CHAT IA</h4>
+      <ul style="margin-top:8px">
+        <li>Arquitetura do chat (3 endpoints)</li>
+        <li>Fluxo completo de uma consulta</li>
+        <li>Geração de DAX e gráficos</li>
+        <li><strong style="color:#FAA954">O que é cada tecnologia</strong></li>
+        <li><strong style="color:#FAA954">Custos estimados</strong></li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>05 · DASHBOARD</h4>
+      <ul style="margin-top:8px">
+        <li>5 páginas do Power BI</li>
+        <li>Slicers e parâmetros</li>
+        <li>Visuais HTML</li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>06 · GLOSSÁRIO</h4>
+      <ul style="margin-top:8px">
+        <li>Termos técnicos e de negócio</li>
+        <li>Siglas e abreviações</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SEÇÃO 01 ========== -->
+<div class="section-div">
+  <div class="num">01</div>
+  <div class="num-bar"></div>
+  <h2>Visão Geral da <em>Solução</em></h2>
+  <p>Contexto do projeto, problema resolvido e arquitetura técnica completa</p>
+</div>
+
+<!-- slide: O Problema -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">01 · VISÃO GERAL</span>
+    <h3>O Problema que a Central de Comando Resolve</h3>
+  </div>
+  <div class="grid2">
+    <div>
+      <div class="card" style="margin-bottom:16px;border-left:4px solid #dc3545">
+        <h4>❌ ANTES — Análise fragmentada</h4>
+        <ul><li>Dados de faturamento, custos e preços em sistemas separados (SAP, planilhas, BRInsights)</li><li>Nenhuma visão integrada de rentabilidade por família e estado</li><li>Sem alertas automáticos sobre deterioração de resultados</li><li>Análise manual demorada e sujeita a erros</li></ul>
+      </div>
+      <div class="card" style="border-left:4px solid #28a745">
+        <h4>✅ DEPOIS — Central de Comando</h4>
+        <ul><li>Visão unificada: faturamento + custo + preço de mercado</li><li>Score automático por família × estado (chave)</li><li>Alertas de Ponto de Ataque com causa e ação recomendada</li><li>IA que responde perguntas em linguagem natural e gera gráficos</li></ul>
+      </div>
+    </div>
+    <div>
+      <div class="kpi-row" style="flex-direction:column;gap:12px">
+        <div class="kpi" style="text-align:left;display:flex;align-items:center;gap:16px">
+          <div class="val">99</div><div><div style="font-size:11px;color:#FAA954;font-weight:700">Medidas DAX</div><div class="lbl">no modelo semântico</div></div>
+        </div>
+        <div class="kpi" style="text-align:left;display:flex;align-items:center;gap:16px">
+          <div class="val">5</div><div><div style="font-size:11px;color:#FAA954;font-weight:700">Páginas</div><div class="lbl">no dashboard Power BI</div></div>
+        </div>
+        <div class="kpi" style="text-align:left;display:flex;align-items:center;gap:16px">
+          <div class="val">3</div><div><div style="font-size:11px;color:#FAA954;font-weight:700">Fontes de dados</div><div class="lbl">SAP · Custos RBE · BRInsights</div></div>
+        </div>
+        <div class="kpi" style="text-align:left;display:flex;align-items:center;gap:16px">
+          <div class="val">IA</div><div><div style="font-size:11px;color:#FAA954;font-weight:700">Chat Claude Haiku</div><div class="lbl">acesso direto ao modelo Power BI</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- slide: Arquitetura -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">01 · VISÃO GERAL</span>
+    <h3>Arquitetura Completa da Solução</h3>
+  </div>
+  <div class="arch-box"><div class="arch-label">FONTES DE DADOS</div>
+    <div class="grid3" style="margin-top:8px">
+      <div class="card-y"><h4>SAP</h4><p>Faturamento por item de pedido/NF — granularidade linha</p></div>
+      <div class="card-y"><h4>Custos RBE</h4><p>Custo padrão por material × mês × fábrica</p></div>
+      <div class="card-y"><h4>BRInsights</h4><p>Preços de mercado coletados por produto × semana × estado</p></div>
+    </div>
+  </div>
+  <div class="arch-arrow-down">▼</div>
+  <div class="arch-box"><div class="arch-label">MODELO SEMÂNTICO — POWER BI</div>
+    <p>Tabelas fato (f_faturamento, f_custos, f_brinsights) + Dimensões (d_calendario, d_uf, d_periodo_atual/ref) + <strong>99 medidas DAX</strong></p>
+  </div>
+  <div class="arch-arrow-down">▼</div>
+  <div class="grid2">
+    <div class="arch-box"><div class="arch-label">DASHBOARD — 5 PÁGINAS</div>
+      <p>Cover · Resultado · Heatmap · Ponto de Ataque · Chat IA<br>Slicers: Período Atual, Período Ref, UF, Indicador</p>
+    </div>
+    <div class="arch-box"><div class="arch-label">CHAT IA — VERCEL + CLAUDE</div>
+      <p>quartzolit-api-6a8h.vercel.app<br>/api/chat (Claude Haiku) · /api/query (DAX via REST API)<br>Geração de gráficos · Export PDF</p>
+    </div>
+  </div>
+</div>
+
+<!-- slide: Stack -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">01 · VISÃO GERAL</span>
+    <h3>Stack Tecnológica</h3>
+  </div>
+  <table>
+    <tr><th>Camada</th><th>Tecnologia</th><th>Função</th><th>Detalhe</th></tr>
+    <tr><td><span class="badge badge-b">BI</span> Análise</td><td>Power BI Desktop</td><td>Dashboard principal</td><td>5 páginas, 99 medidas, visuais HTML</td></tr>
+    <tr><td><span class="badge badge-b">BI</span> Modelo</td><td>Modelo Semântico PBI</td><td>Cubo de dados</td><td>Fabric dataset via REST API</td></tr>
+    <tr><td><span class="badge badge-b">IA</span> Chat</td><td>Claude Haiku 4.5</td><td>LLM para respostas</td><td>Anthropic API · max_tokens 800</td></tr>
+    <tr><td><span class="badge badge-b">IA</span> DAX</td><td>Claude Haiku 4.5</td><td>Geração de DAX</td><td>Schema completo no system prompt</td></tr>
+    <tr><td><span class="badge badge-b">BE</span> API</td><td>Vercel Serverless</td><td>Backend do chat</td><td>Node.js · 256MB · 30s max</td></tr>
+    <tr><td><span class="badge badge-b">BE</span> Auth</td><td>Azure AD</td><td>Acesso ao Power BI</td><td>Client Credentials Flow</td></tr>
+    <tr><td><span class="badge badge-b">FE</span> UI</td><td>HTML + JS Vanilla</td><td>Interface do chat</td><td>Iframe no Power BI · Chart.js</td></tr>
+    <tr><td><span class="badge badge-b">CD</span> Deploy</td><td>GitHub + Vercel</td><td>CI/CD automático</td><td>Push main → deploy produção</td></tr>
+  </table>
+</div>
+
+<!-- ========== SEÇÃO 02 ========== -->
+<div class="section-div">
+  <div class="num">02</div>
+  <div class="num-bar"></div>
+  <h2>Modelo de <em>Dados</em></h2>
+  <p>Fontes, tabelas, relacionamentos e chaves compostas do modelo semântico Power BI</p>
+</div>
+
+<!-- slide: Tabelas Fato -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">02 · MODELO DE DADOS</span>
+    <h3>Tabelas Fato</h3>
+  </div>
+  <div class="grid3">
+    <div class="card-dark">
+      <h4>f_faturamento</h4>
+      <p style="margin-bottom:8px"><span class="badge badge-y">Fonte: SAP</span></p>
+      <p>Granularidade: <strong style="color:#FAA954">item de pedido/NF</strong></p>
+      <ul style="margin-top:10px">
+        <li>Referência Temporal (join calendário)</li>
+        <li>Agrupamento Nível 1/2/3 (família)</li>
+        <li>Estado, Cliente, Canal, Regional</li>
+        <li>Quantidade, Faturamento Líquido</li>
+        <li>YPR0, ZLIP, Rebates, Descontos</li>
+        <li>FK_Custos, FK_BRInsights</li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>f_custos</h4>
+      <p style="margin-bottom:8px"><span class="badge badge-y">Fonte: Planilha RBE</span></p>
+      <p>Granularidade: <strong style="color:#FAA954">material × mês × fábrica</strong></p>
+      <ul style="margin-top:10px">
+        <li>Mês de Apuração Custo</li>
+        <li>Código Produto / Material Nome</li>
+        <li>Fábrica de Produção</li>
+        <li>Custo RBE (usado na margem)</li>
+        <li>Custo MPE</li>
+        <li>PK_Custos (chave primária)</li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>f_brinsights</h4>
+      <p style="margin-bottom:8px"><span class="badge badge-y">Fonte: BRInsights</span></p>
+      <p>Granularidade: <strong style="color:#FAA954">produto × PDV × semana</strong></p>
+      <ul style="margin-top:10px">
+        <li>Data da Coleta / Semana</li>
+        <li>CODEAN, Material, Família</li>
+        <li>Marca do Fornecedor (concorrente)</li>
+        <li>Preço Sell Out</li>
+        <li>Estado, Cliente/Bandeira</li>
+        <li>PK_BRInsights (chave primária)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="highlight" style="margin-top:20px">
+    ⚠️ <strong>Chaves compostas</strong> foram necessárias pois não há uma única coluna para join:<br>
+    <strong>FK_Custos</strong> = Código Produto + AAAAMM + Fábrica &nbsp;|&nbsp;
+    <strong>FK_BRInsights</strong> = Agrupamento Nível 3 + AAAAsemana
+  </div>
+</div>
+
+<!-- slide: Dimensões -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">02 · MODELO DE DADOS</span>
+    <h3>Tabelas Dimensão e Relacionamentos</h3>
+  </div>
+  <div class="grid2">
+    <div>
+      <table>
+        <tr><th>Tabela</th><th>Colunas principais</th><th>Conexão</th></tr>
+        <tr><td><strong>d_calendario</strong></td><td>Data, Ano, Mês Número, Mês Nome, Ano-Mês, Trimestre</td><td>✅ Ativo → f_faturamento[Referência Temporal]</td></tr>
+        <tr><td><strong>d_uf</strong></td><td>UF (sigla 2 letras)</td><td>✅ Ativo → f_faturamento[Estado]</td></tr>
+        <tr><td><strong>d_periodo_atual</strong></td><td>Data, Ano-Mês Label</td><td>❌ Inativo* (slicer DE)</td></tr>
+        <tr><td><strong>d_periodo_ref</strong></td><td>Data, Ano-Mês Label</td><td>❌ Inativo* (slicer ATÉ)</td></tr>
+        <tr><td><strong>d_material</strong></td><td>Código, Nome, Família</td><td>⛔ Desconectada</td></tr>
+        <tr><td><strong>d_filial</strong></td><td>Código, Nome</td><td>⛔ Desconectada</td></tr>
+        <tr><td><strong>d_indicadores</strong></td><td>Indicador ID, Nome, Ordem</td><td>🎛 Slicer de visual</td></tr>
+        <tr><td><strong>d_classificacao</strong></td><td>ID, Nome, Cor</td><td>🎛 Slicer semáforo</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="card-dark" style="height:100%">
+        <h4>* Relacionamentos Inativos</h4>
+        <p style="margin-top:8px">Os períodos (atual e ref) têm relacionamento <strong style="color:#FAA954">inativo</strong> com f_faturamento. São ativados via:</p>
+        <div class="code" style="margin-top:12px"><span class="kw">CALCULATE</span>(<br>
+  &nbsp;&nbsp;[Receita],<br>
+  &nbsp;&nbsp;<span class="fn">USERELATIONSHIP</span>(<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;f_faturamento[Ref. Temporal],<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;d_periodo_atual[Data]<br>
+  &nbsp;&nbsp;)<br>
+)</div>
+        <p style="margin-top:10px">Isso permite comparar <strong style="color:#FAA954">Período Atual vs Referência</strong> com slicers independentes.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SEÇÃO 03 ========== -->
+<div class="section-div">
+  <div class="num">03</div>
+  <div class="num-bar"></div>
+  <h2>Regras de <em>Negócio</em></h2>
+  <p>Score Final, Semáforo dinâmico, Ponto de Ataque e Deterioração Sistêmica</p>
+</div>
+
+<!-- slide: Indicadores Base -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">03 · REGRAS DE NEGÓCIO</span>
+    <h3>Indicadores Principais (6 dimensões de análise)</h3>
+  </div>
+  <table>
+    <tr><th>Indicador</th><th>Fórmula Conceitual</th><th>Tipo</th><th>O que mede</th></tr>
+    <tr><td><strong>Faturamento Pocket</strong></td><td>Faturamento Líquido − Todos os descontos</td><td>R$</td><td>Receita real capturada</td></tr>
+    <tr><td><strong>Receita</strong></td><td>Evolução com volume constante</td><td>R$</td><td>Isola efeito PREÇO</td></tr>
+    <tr><td><strong>Volume</strong></td><td>Evolução com preço constante</td><td>R$</td><td>Isola efeito VOLUME</td></tr>
+    <tr><td><strong>Preço Sell IN</strong></td><td>Faturamento Pocket / Quantidade</td><td>R$/un</td><td>Preço médio realizado ao canal</td></tr>
+    <tr><td><strong>Margem</strong></td><td>(Receita − Custo RBE) / Receita</td><td>%</td><td>Rentabilidade unitária</td></tr>
+    <tr><td><strong>Custo Médio</strong></td><td>Custo RBE médio por unidade</td><td>R$/un</td><td>Pressão de custo</td></tr>
+    <tr><td><strong>Price Index</strong></td><td>Preço Sell IN Quartzolit / Preço Sell Out mercado</td><td>índice</td><td>Posição competitiva de preço</td></tr>
+  </table>
+  <div class="highlight" style="margin-top:20px">
+    Cada indicador tem 3 medidas: <strong>[Indicador] Atual</strong>, <strong>[Indicador] Ref</strong> e <strong>Variação [%/pp]</strong>. Comparativo é controlado pelos slicers de período.
+  </div>
+</div>
+
+<!-- slide: Score Final -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">03 · REGRAS DE NEGÓCIO</span>
+    <h3>Score Final — Como é calculado (0 a 100)</h3>
+  </div>
+  <div class="grid2">
+    <div>
+      <div class="card-dark">
+        <h4>Lógica do Score</h4>
+        <ul style="margin-top:8px">
+          <li><strong style="color:#FAA954">0 = sem problema</strong> / <strong style="color:#dc3545">100 = deterioração máxima</strong></li>
+          <li>Só <strong style="color:#FAA954">quedas</strong> geram penalização (subida de custo também penaliza)</li>
+          <li>Normalização <strong style="color:#FAA954">min-max</strong> dentro do contexto filtrado</li>
+          <li>Ponderação entre os 6 indicadores ativos</li>
+        </ul>
+      </div>
+      <div style="margin-top:16px">
+        <div class="flow">
+          <div class="flow-box">Variação<br>negativa</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box">Penalização<br>(0 ou 1)</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box">Score por<br>indicador</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box-y">Score<br>Final</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card-dark">
+        <h4>6 Penalizações</h4>
+        <table style="margin-top:8px;color:#ccc">
+          <tr style="background:#1e2d4e"><th style="background:#1e2d4e;color:#FAA954">Medida</th><th style="background:#1e2d4e;color:#FAA954">Condição</th></tr>
+          <tr style="background:transparent"><td style="border-color:#333">Penal Receita</td><td style="border-color:#333">Receita caiu</td></tr>
+          <tr style="background:#222"><td style="border-color:#333">Penal Volume</td><td style="border-color:#333">Volume caiu</td></tr>
+          <tr style="background:transparent"><td style="border-color:#333">Penal Preço Sell IN</td><td style="border-color:#333">Preço caiu</td></tr>
+          <tr style="background:#222"><td style="border-color:#333">Penal Margem</td><td style="border-color:#333">Margem caiu</td></tr>
+          <tr style="background:transparent"><td style="border-color:#333">Penal Custo Médio</td><td style="border-color:#333">Custo subiu</td></tr>
+          <tr style="background:#222"><td style="border-color:#333">Penal Price Index</td><td style="border-color:#333">Price Index piorou</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- slide: Semáforo -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">03 · REGRAS DE NEGÓCIO</span>
+    <h3>Classificação Semáforo — P10/P90 Dinâmico</h3>
+  </div>
+  <div class="highlight">
+    A chave de análise é <strong>Família (Agrupamento Nível 1) × UF</strong>. Cada combinação recebe um Score Final e é classificada dinamicamente.
+  </div>
+  <div class="semaforo" style="margin-top:20px">
+    <div class="sem sem-g">
+      <div class="circle">🟢</div>
+      <h5>VERDE — Saudável</h5>
+      <p>Score Final ≤ P10<br>Dentro do percentil 10 das melhores chaves</p>
+    </div>
+    <div class="sem sem-y">
+      <div class="circle">🟡</div>
+      <h5>AMARELO — Atenção</h5>
+      <p>P10 &lt; Score &lt; P90<br>Região intermediária — monitorar</p>
+    </div>
+    <div class="sem sem-r">
+      <div class="circle">🔴</div>
+      <h5>VERMELHO — Crítico</h5>
+      <p>Score Final ≥ P90<br>Piores 10% das chaves — ação imediata</p>
+    </div>
+  </div>
+  <div class="card-dark" style="margin-top:24px">
+    <h4>Por que P10/P90 e não thresholds fixos?</h4>
+    <p style="margin-top:8px">Os percentis são calculados <strong style="color:#FAA954">dinamicamente</strong> sobre todas as chaves ativas (com ALL(d_uf) para estabilidade). Isso garante que sempre haja ~10% de chaves Vermelhas e ~10% Verdes, independente do período ou contexto — o semáforo reflete a <strong style="color:#FAA954">posição relativa</strong>, não um valor absoluto.</p>
+  </div>
+</div>
+
+<!-- slide: Ponto de Ataque -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">03 · REGRAS DE NEGÓCIO</span>
+    <h3>Ponto de Ataque — Diagnóstico T1 / T2 / T3</h3>
+  </div>
+  <div class="grid3">
+    <div class="card" style="border-top:4px solid #FAA954">
+      <h4>T1 — Problema de PREÇO</h4>
+      <p style="color:#666;margin-bottom:10px">Dispara quando Preço Sell IN caiu</p>
+      <strong style="font-size:11px">Causas possíveis:</strong>
+      <ul style="margin-top:6px">
+        <li><strong>1A</strong> — Tabela caiu: planejado ou pressão?</li>
+        <li><strong>1B</strong> — Desconto excessivo corrói preço realizado</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:4px solid #FAA954">
+      <h4>T2 — Problema de VOLUME</h4>
+      <p style="color:#666;margin-bottom:10px">Dispara quando Volume caiu</p>
+      <strong style="font-size:11px">Causas possíveis:</strong>
+      <ul style="margin-top:6px">
+        <li><strong>2A</strong> — Queda estrutural de mercado</li>
+        <li><strong>2B</strong> — Reajuste gerou fuga de volume</li>
+        <li><strong>2C</strong> — Perda estrutural go-to-market</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:4px solid #FAA954">
+      <h4>T3 — Problema de RENTABILIDADE</h4>
+      <p style="color:#666;margin-bottom:10px">Dispara quando Margem caiu</p>
+      <strong style="font-size:11px">Causas possíveis:</strong>
+      <ul style="margin-top:6px">
+        <li><strong>3A</strong> — Margem comprimida por custo</li>
+        <li><strong>3B</strong> — Rebates absorvendo margem</li>
+        <li><strong>3C</strong> — Mix desfavorável</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card-dark" style="margin-top:20px;border:2px solid #dc3545">
+    <h4 style="color:#ff6b6b">⚠️ Deterioração Sistêmica — Nível Crítico Máximo</h4>
+    <p style="margin-top:8px">Ocorre quando <strong style="color:#FAA954">T1 + T2 + T3 disparam simultaneamente</strong> na mesma chave (Família × UF). Indica problema estrutural grave: preço caiu, volume caiu E margem caiu ao mesmo tempo. Ação imediata necessária.</p>
+  </div>
+</div>
+
+<!-- ========== SEÇÃO 04 ========== -->
+<div class="section-div">
+  <div class="num">04</div>
+  <div class="num-bar"></div>
+  <h2>Chat <em>IA</em> Integrado</h2>
+  <p>Arquitetura, fluxo de consulta, geração de DAX e gráficos</p>
+</div>
+
+<!-- slide: Arquitetura Chat -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">04 · CHAT IA</span>
+    <h3>Arquitetura do Chat — 3 Endpoints</h3>
+  </div>
+  <div class="grid3" style="margin-bottom:20px">
+    <div class="card-dark">
+      <h4>POST /api/chat</h4>
+      <p>Motor principal. Dois modos:</p>
+      <ul style="margin-top:8px">
+        <li><span class="badge badge-y">gerar_dax</span> Converte pergunta em DAX</li>
+        <li><span class="badge badge-y">gerar_grafico</span> Converte dados em Chart.js config</li>
+        <li><span class="badge badge-y">chat</span> Resposta contextualizada via Claude</li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>POST /api/query</h4>
+      <p>Executa DAX diretamente no modelo semântico Power BI via REST API com token Azure AD.</p>
+      <ul style="margin-top:8px">
+        <li>Autentica via Client Credentials</li>
+        <li>Chama executeQueries endpoint</li>
+        <li>Retorna linhas brutas</li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>GET /api/dados</h4>
+      <p>Busca KPIs + Top 5 alertas para contexto inicial.</p>
+      <ul style="margin-top:8px">
+        <li>Receita, Volume, Margem, Preço</li>
+        <li>Score verde/amarelo/vermelho</li>
+        <li>Top 5 famílias com alerta</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card-dark">
+    <h4>Variáveis de Ambiente</h4>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px">
+      <span class="badge badge-y">ANTHROPIC_API_KEY</span>
+      <span class="badge badge-y">TENANT_ID</span>
+      <span class="badge badge-y">CLIENT_ID</span>
+      <span class="badge badge-y">CLIENT_SECRET</span>
+      <span class="badge badge-y">WORKSPACE_ID</span>
+      <span class="badge badge-y">DATASET_ID</span>
+    </div>
+  </div>
+</div>
+
+<!-- slide: Fluxo -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">04 · CHAT IA</span>
+    <h3>Fluxo Completo de uma Consulta com Dados</h3>
+  </div>
+  <div class="timeline">
+    <div class="tl-item">
+      <div style="display:flex;flex-direction:column;align-items:center"><div class="tl-dot"></div><div class="tl-line"></div></div>
+      <div class="tl-content"><h5>1. Usuário digita a pergunta</h5><p>Ex: "Gere um gráfico com o faturamento mês a mês em 2025"</p></div>
+    </div>
+    <div class="tl-item">
+      <div style="display:flex;flex-direction:column;align-items:center"><div class="tl-dot"></div><div class="tl-line"></div></div>
+      <div class="tl-content"><h5>2. Frontend detecta que precisa de dados</h5><p>Regex verifica palavras-chave (faturamento, mês, 2025, família, UF...)</p></div>
+    </div>
+    <div class="tl-item">
+      <div style="display:flex;flex-direction:column;align-items:center"><div class="tl-dot"></div><div class="tl-line"></div></div>
+      <div class="tl-content"><h5>3. POST /api/chat — action: "gerar_dax"</h5><p>Claude recebe o SCHEMA completo + pergunta → gera DAX correto em &lt;3s</p></div>
+    </div>
+    <div class="tl-item">
+      <div style="display:flex;flex-direction:column;align-items:center"><div class="tl-dot"></div><div class="tl-line"></div></div>
+      <div class="tl-content"><h5>4. POST /api/query — executa DAX no Power BI</h5><p>Azure AD token → Power BI executeQueries → retorna linhas de dados reais</p></div>
+    </div>
+    <div class="tl-item">
+      <div style="display:flex;flex-direction:column;align-items:center"><div class="tl-dot"></div><div class="tl-line"></div></div>
+      <div class="tl-content"><h5>5. Se pediu gráfico → POST /api/chat — action: "gerar_grafico"</h5><p>Claude converte os dados em config Chart.js: type (bar/line/pie), labels, datasets</p></div>
+    </div>
+    <div class="tl-item">
+      <div style="display:flex;flex-direction:column;align-items:center"><div class="tl-dot"></div></div>
+      <div class="tl-content"><h5>6. Resposta exibida no chat</h5><p>Texto formatado com **negrito** OU gráfico Chart.js renderizado inline · Botão "Exportar PDF" disponível</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- slide: SCHEMA no Prompt -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">04 · CHAT IA</span>
+    <h3>O SCHEMA — Como a IA conhece o modelo Power BI</h3>
+  </div>
+  <div class="grid2">
+    <div>
+      <p style="font-size:12px;margin-bottom:12px">O <strong>system prompt</strong> do Claude contém o SCHEMA completo do modelo semântico. Isso dá à IA conhecimento preciso para gerar DAX correto sem erros.</p>
+      <div class="card-dark">
+        <h4>O SCHEMA inclui:</h4>
+        <ul style="margin-top:8px">
+          <li>Lógica de negócio (Score, P10/P90, T1/T2/T3)</li>
+          <li>Todas as tabelas e colunas exatas</li>
+          <li>99 medidas com descrição</li>
+          <li>15+ exemplos DAX por tipo de pergunta</li>
+          <li>Regras críticas de sintaxe DAX</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="code">
+<span class="cm">-- Exemplo CERTO ✅</span>
+<span class="kw">EVALUATE</span>
+<span class="fn">CALCULATETABLE</span>(
+  <span class="fn">SUMMARIZECOLUMNS</span>(
+    d_calendario[Ano-Mês],
+    d_calendario[Mês Nome],
+    <span class="str">"Fat"</span>, [Faturamento Pocket]
+  ),
+  d_calendario[Ano] = 2025
+)
+
+<span class="cm">-- Exemplo ERRADO ❌</span>
+<span class="kw">EVALUATE</span>
+<span class="fn">SUMMARIZECOLUMNS</span>(
+  d_calendario[Ano-Mês],
+  d_calendario[Ano] = 2025, <span class="cm">← ERRADO</span>
+  [Faturamento Pocket]       <span class="cm">← sem "Nome"</span>
+)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- slide: O que é cada tecnologia -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">04 · CHAT IA</span>
+    <h3>O que é cada tecnologia da infraestrutura</h3>
+  </div>
+  <div class="grid2">
+    <div class="card-dark">
+      <h4>⚡ Vercel</h4>
+      <p>Plataforma de hospedagem em nuvem especializada em <strong style="color:#FAA954">funções serverless</strong> e frontends. Não exige servidor dedicado — o código roda apenas quando há uma requisição e "dorme" quando ocioso. Integrado com GitHub: qualquer <code style="color:#FAA954">git push</code> na branch <code style="color:#FAA954">main</code> gera um novo deploy automático em produção em ~30s.</p>
+      <ul style="margin-top:10px">
+        <li>URL pública: <code style="color:#FAA954">quartzolit-api-6a8h.vercel.app</code></li>
+        <li>Funções: /api/chat · /api/query · /api/dados</li>
+        <li>Runtime: Node.js 18 · 256 MB RAM · timeout 30s</li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>🤖 Anthropic Claude Haiku 4.5</h4>
+      <p>Modelo de linguagem (LLM) da Anthropic — empresa de IA fundada ex-OpenAI. <strong style="color:#FAA954">Haiku</strong> é a versão mais rápida e econômica da família Claude, ideal para tarefas estruturadas como geração de DAX. O modelo recebe um <em>system prompt</em> com todo o schema do Power BI e responde em &lt;3 segundos.</p>
+      <ul style="margin-top:10px">
+        <li>API REST: <code style="color:#FAA954">api.anthropic.com/v1/messages</code></li>
+        <li>Cobrado por tokens (unidades de texto processadas)</li>
+        <li>Haiku = mais barato da linha Claude</li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>🔑 Azure AD — Client Credentials</h4>
+      <p>Serviço de identidade da Microsoft. Usamos o fluxo <strong style="color:#FAA954">Client Credentials</strong>: o backend se autentica como "aplicação" (não como usuário) usando <em>Client ID + Secret</em> para obter um token OAuth 2.0. Com esse token é possível chamar a REST API do Power BI sem login manual.</p>
+      <ul style="margin-top:10px">
+        <li>Token expira a cada 3600s (renovado automaticamente)</li>
+        <li>Permissão necessária: <code style="color:#FAA954">Dataset.ReadWrite.All</code></li>
+        <li>Registrado no portal: <em>Entra ID &gt; Registros de App</em></li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>📊 Power BI REST API</h4>
+      <p>API oficial da Microsoft que permite executar consultas DAX diretamente no modelo semântico publicado no Power BI Service. O endpoint <strong style="color:#FAA954">executeQueries</strong> recebe uma string DAX e retorna os dados como JSON — exatamente o que o chat precisa para buscar dados reais do modelo.</p>
+      <ul style="margin-top:10px">
+        <li>Endpoint: <code style="color:#FAA954">api.powerbi.com/v1.0/myorg/groups/{'{'}WORKSPACE{'}'}/datasets/{'{'}DATASET{'}'}/executeQueries</code></li>
+        <li>Retorna: array de linhas com colunas nomeadas</li>
+        <li>Incluída na licença Power BI Pro/Fabric</li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>🐙 GitHub</h4>
+      <p>Plataforma de versionamento de código (Git). O repositório <strong style="color:#FAA954">ketty-coder/quartzolit-api</strong> armazena todo o código-fonte do projeto. A integração Vercel ↔ GitHub garante CI/CD automático: commit na branch <code style="color:#FAA954">main</code> → Vercel detecta → build → deploy em produção.</p>
+      <ul style="margin-top:10px">
+        <li>Branch: <code style="color:#FAA954">main</code> (produção)</li>
+        <li>Segredo: variáveis de ambiente ficam APENAS no Vercel, nunca no repositório</li>
+        <li>Script <code style="color:#FAA954">deploy.ps1</code>: git push + ajuste de alias automático</li>
+      </ul>
+    </div>
+    <div class="card-dark">
+      <h4>📈 Chart.js</h4>
+      <p>Biblioteca JavaScript open-source para criação de gráficos interativos no navegador. Versão <strong style="color:#FAA954">4.4.0</strong> carregada via CDN (sem instalação). Quando o usuário pede "gráfico", o Claude gera um JSON de configuração Chart.js que é renderizado diretamente dentro do chat no Power BI.</p>
+      <ul style="margin-top:10px">
+        <li>Tipos suportados: <code style="color:#FAA954">bar / line / pie</code></li>
+        <li>Cores Quartzolit: <code style="color:#FAA954">#FAA954</code> (amarelo) e <code style="color:#FAA954">#000</code></li>
+        <li>Gratuito — licença MIT</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- slide: Custos -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">04 · CHAT IA</span>
+    <h3>Custos Estimados da Infraestrutura</h3>
+  </div>
+  <table>
+    <tr><th>Serviço</th><th>Plano atual</th><th>Custo atual</th><th>Próximo tier</th><th>Custo próximo tier</th><th>Observação</th></tr>
+    <tr>
+      <td><strong>Vercel</strong></td>
+      <td><span class="badge badge-g">Hobby</span></td>
+      <td style="color:#28a745"><strong>Gratuito</strong></td>
+      <td>Pro</td>
+      <td>~$20 USD/mês</td>
+      <td>Hobby: uso pessoal, sem SLA. Pro: necessário para uso comercial oficial</td>
+    </tr>
+    <tr>
+      <td><strong>Anthropic Claude Haiku 4.5</strong></td>
+      <td><span class="badge badge-y">Pay-as-you-go</span></td>
+      <td style="color:#856404"><strong>~$0,001 por conversa</strong></td>
+      <td>—</td>
+      <td>Proporcional ao uso</td>
+      <td>Input: $0,80/MTok · Output: $4,00/MTok · Uso leve = custo quase zero</td>
+    </tr>
+    <tr>
+      <td><strong>Azure AD (Entra ID)</strong></td>
+      <td><span class="badge badge-g">Free Tier</span></td>
+      <td style="color:#28a745"><strong>Gratuito</strong></td>
+      <td>P1/P2</td>
+      <td>$6–$9 USD/usuário/mês</td>
+      <td>Registro de app + Client Credentials = gratuito no Free Tier</td>
+    </tr>
+    <tr>
+      <td><strong>Power BI REST API</strong></td>
+      <td><span class="badge badge-b">Incluído</span></td>
+      <td style="color:#28a745"><strong>Sem custo adicional</strong></td>
+      <td>—</td>
+      <td>—</td>
+      <td>Incluído na licença Power BI Pro/Fabric já existente</td>
+    </tr>
+    <tr>
+      <td><strong>GitHub</strong></td>
+      <td><span class="badge badge-g">Free</span></td>
+      <td style="color:#28a745"><strong>Gratuito</strong></td>
+      <td>Team</td>
+      <td>$4 USD/usuário/mês</td>
+      <td>Repositório privado gratuito no plano Free</td>
+    </tr>
+    <tr>
+      <td><strong>Chart.js</strong></td>
+      <td><span class="badge badge-g">Open Source</span></td>
+      <td style="color:#28a745"><strong>Gratuito</strong></td>
+      <td>—</td>
+      <td>—</td>
+      <td>MIT License — sem restrições</td>
+    </tr>
+  </table>
+  <div class="kpi-row" style="margin-top:20px">
+    <div class="kpi">
+      <div class="val">~$0</div>
+      <div class="lbl">Custo mensal atual<br>(uso leve)</div>
+    </div>
+    <div class="kpi">
+      <div class="val">~$20</div>
+      <div class="lbl">USD/mês<br>(Vercel Pro se uso comercial)</div>
+    </div>
+    <div class="kpi">
+      <div class="val">~$5</div>
+      <div class="lbl">USD/mês Claude<br>(1.000 conversas/mês)</div>
+    </div>
+    <div class="kpi">
+      <div class="val">&lt;$30</div>
+      <div class="lbl">USD/mês total<br>(cenário comercial pleno)</div>
+    </div>
+  </div>
+  <div class="highlight">
+    ⚠️ <strong>Atenção:</strong> O plano Hobby do Vercel é destinado a projetos pessoais. Para uso corporativo oficial (Saint-Gobain/Quartzolit), o upgrade para <strong>Vercel Pro ($20/mês)</strong> é recomendado — garante SLA, logs avançados e sem limitação de banda.
+  </div>
+</div>
+
+<!-- ========== SEÇÃO 05 ========== -->
+<div class="section-div">
+  <div class="num">05</div>
+  <div class="num-bar"></div>
+  <h2>Dashboard <em>Power BI</em></h2>
+  <p>5 páginas, slicers de período, heatmap e Ponto de Ataque</p>
+</div>
+
+<!-- slide: Páginas -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="tag">05 · DASHBOARD</span>
+    <h3>As 5 Páginas do Dashboard</h3>
+  </div>
+  <table>
+    <tr><th>#</th><th>Página</th><th>Visuais principais</th><th>Medidas-chave</th></tr>
+    <tr>
+      <td><span class="badge badge-b">1</span></td>
+      <td><strong>COVER</strong></td>
+      <td>Logo Quartzolit/Saint-Gobain, navegação</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-b">2</span></td>
+      <td><strong>RESULTADO</strong></td>
+      <td>Cards de variação, gráfico temporal, tabela por família</td>
+      <td>Indicador Selecionado, Variação %/pp, Score Final</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-b">3</span></td>
+      <td><strong>HEATMAP</strong></td>
+      <td>HTML Heatmap Família × Estado (cores semáforo)</td>
+      <td>Score Final, Classificação, P10/P90</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-b">4</span></td>
+      <td><strong>PONTO DE ATAQUE</strong></td>
+      <td>HTML visual completo com T1/T2/T3 por família</td>
+      <td>Alerta Chave, Causa T1/T2/T3, Acao T1/T2/T3, Deterioração Sistêmica</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-b">5</span></td>
+      <td><strong>CHAT IA</strong></td>
+      <td>Iframe com chat hospedado no Vercel</td>
+      <td>Chat IA (medida que gera URL com parâmetros)</td>
+    </tr>
+  </table>
+  <div class="highlight" style="margin-top:20px">
+    Os <strong>Slicers globais</strong> controlam toda a análise: <strong>Período Atual</strong> (DE) · <strong>Período Referência</strong> (ATÉ) · <strong>UF</strong> · <strong>Indicador</strong> (para visuais dinâmicos)
+  </div>
+  <div class="card-dark" style="margin-top:16px">
+    <h4>Parâmetros passados ao Chat via URL</h4>
+    <p style="margin-top:8px">A medida <code style="color:#FAA954">Chat IA</code> gera dinamicamente a URL do iframe com os valores dos slicers:<br>
+    <code style="color:#FAA954">?atual=Fev/2026&amp;ref=Jan/2025&amp;uf=SP&amp;vd=12&amp;va=8&amp;vv=5&amp;rec=4.2&amp;vol=-1.1&amp;mar=2.3&amp;pre=5.5&amp;al=COLANTE|T1|1A~REJUNTE|T2|2C</code></p>
+  </div>
+</div>
+
+<!-- ========== SEÇÃO 06 ========== -->
+<div class="section-div">
+  <div class="num">06</div>
+  <div class="num-bar"></div>
+  <h2><em>Glossário</em></h2>
+  <p>Termos de negócio, métricas e siglas do projeto</p>
+</div>
+
+<!-- slide: Glossário -->
+<div class="slide slide-sm">
+  <div class="slide-header">
+    <span class="tag">06 · GLOSSÁRIO</span>
+    <h3>Termos e Definições</h3>
+  </div>
+  <div class="grid2">
+    <table>
+      <tr><th>Termo</th><th>Definição</th></tr>
+      <tr><td><strong>Faturamento Pocket</strong></td><td>Receita líquida após todos os descontos</td></tr>
+      <tr><td><strong>Receita</strong></td><td>Evolução com volume constante — isola efeito preço</td></tr>
+      <tr><td><strong>Volume</strong></td><td>Evolução com preço constante — isola efeito volume</td></tr>
+      <tr><td><strong>Preço Sell IN</strong></td><td>Preço de venda ao canal (distribuidor/varejista)</td></tr>
+      <tr><td><strong>Preço Sell Out</strong></td><td>Preço ao consumidor final (coletado via BRInsights)</td></tr>
+      <tr><td><strong>Price Index</strong></td><td>Sell IN Quartzolit / Sell Out mercado — posição competitiva</td></tr>
+      <tr><td><strong>Custo RBE</strong></td><td>Custo Realizado Bruto Estimado — padrão para margem</td></tr>
+      <tr><td><strong>Margem</strong></td><td>(Receita − Custo RBE) / Receita</td></tr>
+    </table>
+    <table>
+      <tr><th>Termo</th><th>Definição</th></tr>
+      <tr><td><strong>P10 / P90</strong></td><td>Percentil 10 e 90 do Score Final — limiares dinâmicos</td></tr>
+      <tr><td><strong>Score Final</strong></td><td>0–100: deterioração ponderada da chave</td></tr>
+      <tr><td><strong>Chave</strong></td><td>Combinação Família × UF — unidade básica de análise</td></tr>
+      <tr><td><strong>T1 / T2 / T3</strong></td><td>Tipos de problema: Preço / Volume / Rentabilidade</td></tr>
+      <tr><td><strong>Det. Sistêmica</strong></td><td>T1+T2+T3 simultâneos — problema estrutural grave</td></tr>
+      <tr><td><strong>BRInsights</strong></td><td>Ferramenta de coleta de preços de concorrentes</td></tr>
+      <tr><td><strong>ZLIP</strong></td><td>Preço lista interno da Quartzolit</td></tr>
+      <tr><td><strong>DAX</strong></td><td>Data Analysis Expressions — linguagem de fórmulas Power BI</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ========== ENCERRAMENTO ========== -->
+<div class="cover" style="page-break-before:always">
+  <div class="cover-qz-txt">
+    <span>Quanti<b>Z</b></span>
+    <small>Pricing Solutions</small>
+  </div>
+  <div class="cover-tag">QuantiZ Pricing Solutions · 2026</div>
+  <h1>Obrigado<span>.</span></h1>
+  <div class="cover-divider"></div>
+  <p class="cover-sub" style="margin-top:0">Central de Comando Quartzolit — v1.0</p>
+  <p style="color:#495678;margin-top:16px;position:relative;z-index:1;font-size:12px">
+    quartzolit-api-6a8h.vercel.app &nbsp;·&nbsp; Saint-Gobain Brasil
+  </p>
+  <div class="cover-logo">
+    <p>QUART<span>Z</span>OLIT</p>
+    <small>Saint-Gobain Brasil</small>
+  </div>
+</div>
+
+<div style="position:fixed;bottom:20px;right:20px;z-index:999">
+  <button onclick="window.print()" style="background:#FAA954;border:none;padding:12px 26px;font-weight:700;font-size:13px;border-radius:6px;cursor:pointer;font-family:'Montserrat',sans-serif;box-shadow:0 4px 16px rgba(21,31,56,.35);color:#151F38;letter-spacing:.5px;text-transform:uppercase">
+    🖨️ Salvar como PDF
+  </button>
+</div>
+
+</body>
+</html>
+
+
